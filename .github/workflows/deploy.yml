@@ -22,4 +22,4 @@ jobs:
           script: |
             cd /root/freqtrade
             git pull origin develop
-            systemctl restart freqtrade
+            docker-compose restart
