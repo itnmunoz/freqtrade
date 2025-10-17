@@ -1,0 +1,25 @@
+name: Sync to Hetzner
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Sync with Hetzner
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: root
+          key: ${{ secrets.HETZNER_KEY }}
+          script: |
+            cd /root/freqtrade
+            git pull origin develop
+            systemctl restart freqtrade
