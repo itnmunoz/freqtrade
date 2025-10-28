@@ -59,12 +59,7 @@
     ],
     "pairlists": [
         {
-            "method": "StaticPairList",
-            "x_method": "VolumePairList",
-            "x_number_assets": 20,
-            "x_sort_key": "quoteVolume",
-            "x_min_value": 0,
-            "x_refresh_period": 1800
+            "method": "StaticPairList"
         }
     ],
     "telegram": {
