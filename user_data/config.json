@@ -46,12 +46,26 @@
     },
     "pairlists": [
         {
-            "method": "VolumePairList",
-            "number_assets": 20,
-            "sort_key": "quoteVolume",
-            "min_value": 0,
-            "refresh_period": 1800
+            "method": "StaticPairList",
+            "_method": "VolumePairList",
+            "_number_assets": 20,
+            "_sort_key": "quoteVolume",
+            "_min_value": 0,
+            "_refresh_period": 1800
         }
+    ],
+    "pair_whitelist": [
+        "BTC/USDC",
+        "ETH/USDC",
+        "BNB/USDC",
+        "SOL/USDC",
+        "XRP/USDC",
+        "ADA/USDC",
+        "MATIC/USDC",
+        "DOGE/USDC",
+        "AVAX/USDC",
+        "LINK/USDC",
+        "XLM/USDC"
     ],
     "telegram": {
         "enabled": false,
@@ -75,18 +89,5 @@
     "force_entry_enable": false,
     "internals": {
         "process_throttle_secs": 5
-    },
-    "pair_whitelist": [
-        "BTC/USDC",
-        "ETH/USDC",
-        "BNB/USDC",
-        "SOL/USDC",
-        "XRP/USDC",
-        "ADA/USDC",
-        "MATIC/USDC",
-        "DOGE/USDC",
-        "AVAX/USDC",
-        "LINK/USDC",
-        "XLM/USDC"
-    ]
+    }
 }
