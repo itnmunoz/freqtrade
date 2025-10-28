@@ -9,7 +9,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class Algo_KevinDavy_Daily(IStrategy):
+class Jordi_KevinDavy_Daily(IStrategy):
     """
     Estrategia 3 del vídeo adaptada a Freqtrade:
     - Patrón de velas (condiciones de máximos/mínimos y cierre rompedor)
@@ -128,3 +128,4 @@ class Algo_KevinDavy_Daily(IStrategy):
 
         # Devolvemos la distancia negativa (freqtrade espera valor negativo)
         return -abs(sl_pct)
+
