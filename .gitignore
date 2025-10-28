@@ -10,6 +10,7 @@ user_data/*
 !user_data/notebooks
 !user_data/models
 !user_data/freqaimodels
+!user_data/config.json
 user_data/freqaimodels/*
 user_data/models/*
 user_data/notebooks/*

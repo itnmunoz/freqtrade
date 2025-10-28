@@ -9,6 +9,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class Jordi_KevinDavy_Daily(IStrategy):
     """
     Estrategia 3 del vídeo adaptada a Freqtrade:
@@ -128,4 +129,7 @@ class Jordi_KevinDavy_Daily(IStrategy):
 
         # Devolvemos la distancia negativa (freqtrade espera valor negativo)
         return -abs(sl_pct)
+<<<<<<< HEAD
 
+=======
+>>>>>>> ba0185854 (config.json now in repository)
