@@ -129,7 +129,3 @@ class Jordi_KevinDavy_Daily(IStrategy):
 
         # Devolvemos la distancia negativa (freqtrade espera valor negativo)
         return -abs(sl_pct)
-<<<<<<< HEAD
-
-=======
->>>>>>> ba0185854 (config.json now in repository)
