@@ -39,27 +39,31 @@
         "secret": "",
         "ccxt_config": {},
         "ccxt_async_config": {},
-        "pair_whitelist": [],
+        "pair_whitelist": [
+            "BTC/USDC",
+            "ETH/USDC",
+            "BNB/USDC",
+            "SOL/USDC",
+            "XRP/USDC",
+            "ADA/USDC",
+            "MATIC/USDC",
+            "DOGE/USDC",
+            "AVAX/USDC",
+            "LINK/USDC",
+            "XLM/USDC"
+        ],
         "pair_blacklist": [
             "BNB/.*"
         ]
     },
-    "pair_whitelist": [
-        "BTC/USDC",
-        "ETH/USDC",
-        "BNB/USDC",
-        "SOL/USDC",
-        "XRP/USDC",
-        "ADA/USDC",
-        "MATIC/USDC",
-        "DOGE/USDC",
-        "AVAX/USDC",
-        "LINK/USDC",
-        "XLM/USDC"
-    ],
     "pairlists": [
         {
-            "method": "StaticPairList"
+            "method": "StaticPairList",
+            "x_method": "VolumePairList",
+            "x_number_assets": 20,
+            "x_sort_key": "quoteVolume",
+            "x_min_value": 0,
+            "x_refresh_period": 1800
         }
     ],
     "telegram": {
