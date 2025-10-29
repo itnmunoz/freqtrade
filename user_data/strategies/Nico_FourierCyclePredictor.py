@@ -12,7 +12,6 @@ class FourierCycleInflection(IStrategy):
     stoploss = -0.015
     use_custom_stoploss = False
 
-    '''
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
         fft = np.fft.fft(signal)
         freqs = np.fft.fftfreq(len(signal))
@@ -20,14 +19,16 @@ class FourierCycleInflection(IStrategy):
         fft_filtered = np.zeros_like(fft)
         fft_filtered[idx] = fft[idx]
         reconstructed = np.fft.ifft(fft_filtered).real
+
         t_next = len(signal)
         prediction = sum(
             np.abs(fft[i]) * np.cos(2 * np.pi * freqs[i] * t_next + np.angle(fft[i]))
             for i in idx
-        )
-        return reconstructed, prediction
-    '''
+        )/t_next
 
+        return reconstructed, prediction
+
+    '''
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
         mean = np.mean(signal)
         centered = signal - mean
@@ -47,6 +48,7 @@ class FourierCycleInflection(IStrategy):
         )/t_pred + mean
 
         return reconstructed, pred
+    '''
 
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
         window = 256
