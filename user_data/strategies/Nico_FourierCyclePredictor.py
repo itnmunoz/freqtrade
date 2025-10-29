@@ -29,22 +29,22 @@ class FourierCycleInflection(IStrategy):
     '''
 
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
-        # Transformada directa sin centrar
-        fft = np.fft.fft(signal)
+        mean = np.mean(signal)
+        centered = signal - mean
 
-        # Filtrar altas frecuencias, conservando la componente DC
+        fft = np.fft.fft(centered)
         fft[n_freqs:-n_freqs] = 0
 
-        # Reconstrucción sin sumar la media manualmente
-        reconstructed = np.fft.ifft(fft).real
+        reconstructed = np.fft.ifft(fft).real + mean
 
-        # Predicción: extrapolar una vela más
-        t_pred = len(signal)
-        freqs = np.fft.fftfreq(len(signal))
-        pred = np.sum([
+        t_pred = len(centered)
+        freqs = np.fft.fftfreq(len(centered))
+
+        # Predicción sin factor 2 ni normalización artificial
+        pred = sum(
             np.abs(fft[k]) * np.cos(2 * np.pi * freqs[k] * t_pred + np.angle(fft[k]))
             for k in range(1, n_freqs + 1)
-        ])
+        ) + mean
 
         return reconstructed, pred
 
