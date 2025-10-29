@@ -12,6 +12,7 @@ class FourierCycleInflection(IStrategy):
     stoploss = -0.015
     use_custom_stoploss = False
 
+    '''
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
         fft = np.fft.fft(signal)
         freqs = np.fft.fftfreq(len(signal))
@@ -21,11 +22,35 @@ class FourierCycleInflection(IStrategy):
         reconstructed = np.fft.ifft(fft_filtered).real
         t_next = len(signal)
         prediction = sum(
-            np.abs(fft[i]) * np.cos(2 * np.pi *
-                                    freqs[i] * t_next + np.angle(fft[i]))
+            np.abs(fft[i]) * np.cos(2 * np.pi * freqs[i] * t_next + np.angle(fft[i]))
             for i in idx
         )
         return reconstructed, prediction
+    '''
+
+    def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
+        # Centrar la señal
+        mean = np.mean(signal)
+        centered = signal - mean
+
+        # Transformada
+        fft = np.fft.fft(centered)
+        fft[n_freqs:-n_freqs] = 0  # filtrar altas frecuencias
+
+        # Reconstrucción
+        reconstructed = np.fft.ifft(fft).real + mean
+
+        # Predicción: extrapolar una vela más
+        # t = np.arange(len(centered))
+        t_pred = len(centered)
+        freqs = np.fft.fftfreq(len(centered))
+        pred = np.sum([
+            2 * np.abs(fft[k]) * np.cos(2 * np.pi *
+                                        freqs[k] * t_pred + np.angle(fft[k]))
+            for k in range(1, n_freqs + 1)
+        ]) / len(centered) + mean
+
+        return reconstructed, pred
 
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
         window = 256
@@ -54,6 +79,36 @@ class FourierCycleInflection(IStrategy):
             df.loc[df.index[i], 'fourier_pred'] = pred
 
         return df
+
+    '''
+    def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
+
+        df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
+        df['fourier_pred'] = np.nan
+        df['reconstructed'] = np.nan
+        df['cycle_slope'] = np.nan
+        df['cycle_min'] = np.nan
+
+        if len(df) >= 256:
+            signal = df['cycle'].values[-256:]
+            reconstructed, pred = self.fourier_predict(signal)
+            df.loc[df.index[-256:], 'reconstructed'] = reconstructed
+
+            # Detectar mínimos locales en la señal reconstruida
+            min_idx = argrelextrema(reconstructed, np.less_equal, order=5)[0]
+            df.loc[df.index[-256:], 'cycle_min'] = np.nan
+            df.loc[df.index[-256:][min_idx],
+                   'cycle_min'] = reconstructed[min_idx]
+            
+            # Calcular pendiente de la señal reconstruida
+            slope = np.gradient(reconstructed)
+            df.loc[df.index[-256:], 'cycle_slope'] = slope
+
+            # Guardar predicción
+            df.loc[df.index[-1], 'fourier_pred'] = pred
+
+        return df
+    '''
 
     def populate_buy_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         df.loc[
