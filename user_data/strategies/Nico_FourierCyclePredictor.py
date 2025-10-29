@@ -28,29 +28,30 @@ class FourierCycleInflection(IStrategy):
         return reconstructed, prediction
 
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
+        window = 256
+        n_freqs = 5
+
         df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
         df['fourier_pred'] = np.nan
         df['reconstructed'] = np.nan
         df['cycle_slope'] = np.nan
         df['cycle_min'] = np.nan
 
-        if len(df) >= 256:
-            signal = df['cycle'].values[-256:]
-            reconstructed, pred = self.fourier_predict(signal)
-            df.loc[df.index[-256:], 'reconstructed'] = reconstructed
+        for i in range(window, len(df)):
+            signal = df['cycle'].values[i - window:i]
+            reconstructed, pred = self.fourier_predict(signal, n_freqs=n_freqs)
 
-            # Detectar mínimos locales en la señal reconstruida
+            # Asignar solo el último valor de cada cálculo a la vela actual
+            df.loc[df.index[i], 'reconstructed'] = reconstructed[-1]
+            df.loc[df.index[i], 'cycle_slope'] = np.gradient(reconstructed)[-1]
+
+            # Detectar si la última vela es mínimo local
             min_idx = argrelextrema(reconstructed, np.less_equal, order=5)[0]
-            df.loc[df.index[-256:], 'cycle_min'] = np.nan
-            df.loc[df.index[-256:][min_idx],
-                   'cycle_min'] = reconstructed[min_idx]
+            if window - 1 in min_idx:
+                df.loc[df.index[i], 'cycle_min'] = reconstructed[-1]
 
-            # Calcular pendiente de la señal reconstruida
-            slope = np.gradient(reconstructed)
-            df.loc[df.index[-256:], 'cycle_slope'] = slope
-
-            # Guardar predicción
-            df.loc[df.index[-1], 'fourier_pred'] = pred
+            # Predicción Fourier
+            df.loc[df.index[i], 'fourier_pred'] = pred
 
         return df
 
