@@ -49,7 +49,7 @@ class FourierCycleInflection(IStrategy):
 
         return reconstructed, pred
     '''
-
+    '''
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
         window = 256
         n_freqs = 5
@@ -77,8 +77,8 @@ class FourierCycleInflection(IStrategy):
             df.loc[df.index[i], 'fourier_pred'] = pred
 
         return df
-
     '''
+
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
 
         df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
@@ -106,7 +106,6 @@ class FourierCycleInflection(IStrategy):
             df.loc[df.index[-1], 'fourier_pred'] = pred
 
         return df
-    '''
 
     def populate_buy_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         df.loc[
