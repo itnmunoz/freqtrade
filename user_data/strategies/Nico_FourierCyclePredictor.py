@@ -8,7 +8,7 @@ class FourierCycleInflection(IStrategy):
     timeframe = '5m'
     startup_candle_count = 300
 
-    minimal_roi = {"0": 0.015, "30": 0.01, "60": 0}
+    minimal_roi = {"0": 0.02, "30": 0.01, "60": 0}
     stoploss = -0.015
     use_custom_stoploss = False
 
