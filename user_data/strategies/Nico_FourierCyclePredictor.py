@@ -42,9 +42,9 @@ class FourierCycleInflection(IStrategy):
         t_pred = len(signal)
         freqs = np.fft.fftfreq(len(signal))
         pred = np.sum([
-            2 * np.abs(fft[k]) * np.cos(2 * np.pi * freqs[k] * t_pred + np.angle(fft[k]))
+            np.abs(fft[k]) * np.cos(2 * np.pi * freqs[k] * t_pred + np.angle(fft[k]))
             for k in range(1, n_freqs + 1)
-        ]) / len(signal)
+        ])
 
         return reconstructed, pred
 
