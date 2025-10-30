@@ -98,8 +98,8 @@ class FourierCycleInflection(IStrategy):
             df.loc[df.index[-256:][min_idx],
                    'cycle_min'] = reconstructed[min_idx]
 
-            # Calcular pendiente de la señal reconstruida
-            slope = np.gradient(reconstructed)
+            # Calcular pendiente sobre la señal original suavizada
+            slope = np.gradient(df['cycle'].values[-256:])
             df.loc[df.index[-256:], 'cycle_slope'] = slope
 
             # Guardar predicción
