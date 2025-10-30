@@ -22,7 +22,8 @@ class FourierCycleInflection(IStrategy):
 
         t_next = len(signal)
         prediction = sum(
-            np.abs(fft[i]) * np.cos(2 * np.pi * freqs[i] * t_next + np.angle(fft[i]))
+            np.abs(fft[i]) * np.cos(2 * np.pi *
+                                    freqs[i] * t_next + np.angle(fft[i]))
             for i in idx
         )/t_next
 
@@ -100,7 +101,9 @@ class FourierCycleInflection(IStrategy):
 
             # Calcular pendiente sobre la señal original suavizada
             slope = np.gradient(df['cycle'].values[-256:])
-            df.loc[df.index[-256:], 'cycle_slope'] = slope
+            smoothed_slope = self.lowpass_filter(
+                slope, kernel_size=7, window='hamming')
+            df.loc[df.index[-256:], 'cycle_slope'] = smoothed_slope
 
             # Guardar predicción
             df.loc[df.index[-1], 'fourier_pred'] = pred
@@ -110,9 +113,8 @@ class FourierCycleInflection(IStrategy):
     def populate_buy_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         df.loc[
             (
-                (df['fourier_pred'] > df['close']) &
-                (df['cycle_slope'] > 0)  # &  tramo creciente
-                #  (df['cycle_min'].notnull().shift(1))  # venimos de un mínimo reciente
+                (df['cycle_slope'] > 0) &
+                (df['cycle_slope'].shift(1) <= 0)
             ),
             'buy'
         ] = 1
@@ -121,9 +123,36 @@ class FourierCycleInflection(IStrategy):
     def populate_sell_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         df.loc[
             (
-                (df['fourier_pred'] < df['close']) &
-                (df['cycle_slope'] < 0)  # tramo descendente
+                (df['cycle_slope'] < -0.001)  # tramo descendente
+                # (df['fourier_pred'] < df['close']) &
             ),
             'sell'
         ] = 1
         return df
+
+    @staticmethod
+    def lowpass_filter(signal: np.ndarray, kernel_size: int = 5, window: str = 'hamming') -> np.ndarray:
+        """
+        Aplica un filtro paso bajo por convolución a una señal 1D.
+
+        Parameters:
+        - signal: np.ndarray. Señal original.
+        - kernel_size: int. Tamaño del kernel de suavizado.
+        - window: str. Tipo de ventana ('hamming', 'rect', 'gaussian').
+
+        Returns:
+        - np.ndarray. Señal suavizada.
+        """
+        if window == 'hamming':
+            kernel = np.hamming(kernel_size)
+        elif window == 'gaussian':
+            from scipy.signal.windows import gaussian
+            kernel = gaussian(kernel_size, std=kernel_size / 6)
+        elif window == 'rect':
+            kernel = np.ones(kernel_size)
+        else:
+            raise ValueError(f"Ventana no soportada: {window}")
+
+        kernel /= kernel.sum()
+        smoothed = np.convolve(signal, kernel, mode='same')
+        return smoothed
