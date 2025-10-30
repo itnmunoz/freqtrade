@@ -97,7 +97,7 @@ class FourierCycleInflection(IStrategy):
             df.loc[df.index[-256:], 'cycle_min'] = np.nan
             df.loc[df.index[-256:][min_idx],
                    'cycle_min'] = reconstructed[min_idx]
-            
+
             # Calcular pendiente de la señal reconstruida
             slope = np.gradient(reconstructed)
             df.loc[df.index[-256:], 'cycle_slope'] = slope
@@ -111,9 +111,8 @@ class FourierCycleInflection(IStrategy):
         df.loc[
             (
                 (df['fourier_pred'] > df['close']) &
-                (df['cycle_slope'] > 0) &  # tramo creciente
-                # venimos de un mínimo reciente
-                (df['cycle_min'].notnull().shift(1))
+                (df['cycle_slope'] > 0)  # &  tramo creciente
+                #  (df['cycle_min'].notnull().shift(1))  # venimos de un mínimo reciente
             ),
             'buy'
         ] = 1
