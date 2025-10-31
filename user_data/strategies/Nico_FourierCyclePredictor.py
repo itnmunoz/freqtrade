@@ -8,9 +8,14 @@ class FourierCycleInflection(IStrategy):
     timeframe = '5m'
     startup_candle_count = 300
 
-    minimal_roi = {"0": 0}
+    minimal_roi = {
+        "0": 0.05,   # 5% en cualquier momento
+        "60": 0.02,  # 3% después de 60 minutos
+        "120": 0.01, # 1% después de 120 minutos
+        "180": 0
+    }
     stoploss = -0.015
-    use_custom_stoploss = False
+    use_custom_stoploss = True  # Ignora minimal_roi, stoploss
 
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
         fft = np.fft.fft(signal)
@@ -101,7 +106,8 @@ class FourierCycleInflection(IStrategy):
 
             # Calcular pendiente sobre la señal original suavizada
             slope = np.gradient(df['cycle'].values[-256:])
-            smoothed_slope = self.lowpass_filter(slope, kernel_size=7, window='hamming')
+            smoothed_slope = self.lowpass_filter(
+                slope, kernel_size=7, window='hamming')
             df.loc[df.index[-256:], 'cycle_slope'] = smoothed_slope
 
             # Superponer en la gráica en la misma ordenada
