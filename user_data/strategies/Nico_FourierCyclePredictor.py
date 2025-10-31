@@ -101,12 +101,11 @@ class FourierCycleInflection(IStrategy):
 
             # Calcular pendiente sobre la señal original suavizada
             slope = np.gradient(df['cycle'].values[-256:])
-            smoothed_slope = self.lowpass_filter(
-                slope, kernel_size=7, window='hamming')
+            smoothed_slope = self.lowpass_filter(slope, kernel_size=7, window='hamming')
             df.loc[df.index[-256:], 'cycle_slope'] = smoothed_slope
 
             # Superponer en la gráica en la misma ordenada
-            df['cycle_slope_offset'] = df['cycle_slope'] + np.mean(signal)
+            df['cycle_slope_offset'] = df['cycle_slope']*5 + np.mean(signal)
 
             # Guardar predicción
             df.loc[df.index[-1], 'fourier_pred'] = pred
