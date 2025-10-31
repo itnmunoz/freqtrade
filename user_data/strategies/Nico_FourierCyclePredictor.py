@@ -105,7 +105,8 @@ class FourierCycleInflection(IStrategy):
             df.loc[df.index[-256:], 'cycle_slope'] = smoothed_slope
 
             # Superponer en la gráica en la misma ordenada
-            df['cycle_slope_offset'] = df['cycle_slope']*5 + np.mean(signal)
+            df['cycle_slope_offset'] = df['cycle_slope']*10 + np.mean(signal)
+            df['cycle_slope_mean'] = np.mean(signal)
 
             # Guardar predicción
             df.loc[df.index[-1], 'fourier_pred'] = pred
