@@ -3,10 +3,13 @@ from pandas import DataFrame
 from scipy.signal import savgol_filter, argrelextrema
 import numpy as np
 
+from freqtrade.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class FourierCycleInflection(IStrategy):
-    timeframe = '5m'
-    startup_candle_count = 300
+    timeframe = '1m'
 
     minimal_roi = {
         "0": 0.05,    # 5% en cualquier momento
