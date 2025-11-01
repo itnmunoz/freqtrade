@@ -72,6 +72,7 @@ class FourierCycleInflection(IStrategy):
         return df
 
     def populate_buy_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+        '''
         df.loc[
             (
                 (df['cycle_slope'] > 0) &
@@ -79,6 +80,29 @@ class FourierCycleInflection(IStrategy):
             ),
             'buy'
         ] = 1
+        return df
+        '''
+        # Eliminar índices duplicados para evitar errores de reindexado
+        df = df[~df.index.duplicated(keep='last')]
+
+        # Inicializar columnas si no existen
+        df['buy'] = 0
+        df['buy_tag'] = ''
+
+        # Condición de entrada: cruce de pendiente negativa a positiva
+        buy_condition = (df['cycle_slope'] > 0) & (
+            df['cycle_slope'].shift(1) <= 0)
+
+        # Asignar señal y etiqueta
+        df.loc[buy_condition, 'buy'] = 1
+        df.loc[buy_condition, 'buy_tag'] = 'slope_up'
+
+        # Logging para trazabilidad en tiempo real
+        if df['buy'].iloc[-1] == 1:
+            self.logger.info(
+                f"Buy signal at {df.index[-1]} | slope: {df['cycle_slope'].iloc[-1]:.6f} | tag: {df['buy_tag'].iloc[-1]}"
+            )
+
         return df
 
     def populate_sell_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
