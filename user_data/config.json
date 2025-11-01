@@ -20,18 +20,21 @@
         "unit": "minutes"
     },
     "entry_pricing": {
-        "price_side": "same",
-        "use_order_book": true,
+        "price_side": "ask",
+        "use_order_book": false,
         "order_book_top": 1,
-        "price_last_balance": 0.0,
-        "check_depth_of_market": {
+        "x_price_side": "same",
+        "x_use_order_book": true,
+        "x_order_book_top": 1,
+        "x_price_last_balance": 0.0,
+        "x_check_depth_of_market": {
             "enabled": false,
             "bids_to_ask_delta": 1
         }
     },
     "exit_pricing": {
         "price_side": "same",
-        "use_order_book": true,
+        "use_order_book": false,
         "order_book_top": 1
     },
     "exchange": {
@@ -85,8 +88,11 @@
     },
     "bot_name": "cryptobot",
     "initial_state": "running",
-    "force_entry_enable": false,
+    "force_entry_enable": true,
     "internals": {
         "process_throttle_secs": 5
-    }
+    },
+    "use_exit_signal": true,
+    "exit_profit_only": false,
+    "ignore_roi_if_entry_signal": true
 }

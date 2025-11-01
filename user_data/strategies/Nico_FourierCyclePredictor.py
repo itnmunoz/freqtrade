@@ -9,13 +9,14 @@ class FourierCycleInflection(IStrategy):
     startup_candle_count = 300
 
     minimal_roi = {
-        "0": 0.05,   # 5% en cualquier momento
-        "60": 0.02,  # 3% después de 60 minutos
-        "120": 0.01, # 1% después de 120 minutos
+        "0": 0.05,    # 5% en cualquier momento
+        "60": 0.02,   # 3% después de 60 minutos
+        "120": 0.01,  # 1% después de 120 minutos
         "180": 0
     }
+
     stoploss = -0.015
-    use_custom_stoploss = True  # Ignora minimal_roi, stoploss
+    use_custom_exit_trend = True  # Evitar salir tarde
 
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
         fft = np.fft.fft(signal)
@@ -33,6 +34,89 @@ class FourierCycleInflection(IStrategy):
         )/t_next
 
         return reconstructed, prediction
+
+    def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
+
+        df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
+        df['cycle_slope'] = np.nan
+        df['cycle_min'] = np.nan
+        df['fourier_pred'] = np.nan
+        df['reconstructed'] = np.nan
+
+        if len(df) >= 256:
+            signal = df['cycle'].values[-256:]
+
+            '''
+            reconstructed, pred = self.fourier_predict(signal)
+            df.loc[df.index[-256:], 'reconstructed'] = reconstructed
+
+            # Detectar mínimos locales en la señal reconstruida
+            min_idx = argrelextrema(reconstructed, np.less_equal, order=5)[0]
+            df.loc[df.index[-256:], 'cycle_min'] = np.nan
+            df.loc[df.index[-256:][min_idx],'cycle_min'] = reconstructed[min_idx]
+
+            # Guardar predicción
+            df.loc[df.index[-1], 'fourier_pred'] = pred
+            '''
+
+            # Calcular pendiente sobre la señal original suavizada
+            slope = np.gradient(df['cycle'].values[-256:])
+            smoothed_slope = self.lowpass_filter(
+                slope, kernel_size=7, window='hamming')
+            df.loc[df.index[-256:], 'cycle_slope'] = smoothed_slope
+
+            # Superponer en la gráica en la misma ordenada
+            df['cycle_slope_offset'] = df['cycle_slope']*10 + np.mean(signal)
+            df['cycle_slope_mean'] = np.mean(signal)
+
+        return df
+
+    def populate_buy_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+        df.loc[
+            (
+                (df['cycle_slope'] > 0) &
+                (df['cycle_slope'].shift(1) <= 0)
+            ),
+            ['buy', 'buy_tag']
+        ] = [1, 'slope_up']
+        return df
+
+    def populate_sell_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+        df.loc[
+            (
+                (df['cycle_slope'] < 0)  # tramo descendente
+                # (df['fourier_pred'] < df['close']) &
+            ),
+            ['sell', 'sell_tag']
+        ] = [1, 'slope_down']
+        return df
+
+    @staticmethod
+    def lowpass_filter(signal: np.ndarray, kernel_size: int = 5, window: str = 'hamming') -> np.ndarray:
+        """
+        Aplica un filtro paso bajo por convolución a una señal 1D.
+
+        Parameters:
+        - signal: np.ndarray. Señal original.
+        - kernel_size: int. Tamaño del kernel de suavizado.
+        - window: str. Tipo de ventana ('hamming', 'rect', 'gaussian').
+
+        Returns:
+        - np.ndarray. Señal suavizada.
+        """
+        if window == 'hamming':
+            kernel = np.hamming(kernel_size)
+        elif window == 'gaussian':
+            from scipy.signal.windows import gaussian
+            kernel = gaussian(kernel_size, std=kernel_size / 6)
+        elif window == 'rect':
+            kernel = np.ones(kernel_size)
+        else:
+            raise ValueError(f"Ventana no soportada: {window}")
+
+        kernel /= kernel.sum()
+        smoothed = np.convolve(signal, kernel, mode='same')
+        return smoothed
 
     '''
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
@@ -84,84 +168,3 @@ class FourierCycleInflection(IStrategy):
 
         return df
     '''
-
-    def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
-
-        df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
-        df['fourier_pred'] = np.nan
-        df['reconstructed'] = np.nan
-        df['cycle_slope'] = np.nan
-        df['cycle_min'] = np.nan
-
-        if len(df) >= 256:
-            signal = df['cycle'].values[-256:]
-            reconstructed, pred = self.fourier_predict(signal)
-            df.loc[df.index[-256:], 'reconstructed'] = reconstructed
-
-            # Detectar mínimos locales en la señal reconstruida
-            min_idx = argrelextrema(reconstructed, np.less_equal, order=5)[0]
-            df.loc[df.index[-256:], 'cycle_min'] = np.nan
-            df.loc[df.index[-256:][min_idx],
-                   'cycle_min'] = reconstructed[min_idx]
-
-            # Calcular pendiente sobre la señal original suavizada
-            slope = np.gradient(df['cycle'].values[-256:])
-            smoothed_slope = self.lowpass_filter(
-                slope, kernel_size=7, window='hamming')
-            df.loc[df.index[-256:], 'cycle_slope'] = smoothed_slope
-
-            # Superponer en la gráica en la misma ordenada
-            df['cycle_slope_offset'] = df['cycle_slope']*10 + np.mean(signal)
-            df['cycle_slope_mean'] = np.mean(signal)
-
-            # Guardar predicción
-            df.loc[df.index[-1], 'fourier_pred'] = pred
-
-        return df
-
-    def populate_buy_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        df.loc[
-            (
-                (df['cycle_slope'] > 0) &
-                (df['cycle_slope'].shift(1) <= 0)
-            ),
-            'buy'
-        ] = 1
-        return df
-
-    def populate_sell_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        df.loc[
-            (
-                (df['cycle_slope'] < -0.001)  # tramo descendente
-                # (df['fourier_pred'] < df['close']) &
-            ),
-            'sell'
-        ] = 1
-        return df
-
-    @staticmethod
-    def lowpass_filter(signal: np.ndarray, kernel_size: int = 5, window: str = 'hamming') -> np.ndarray:
-        """
-        Aplica un filtro paso bajo por convolución a una señal 1D.
-
-        Parameters:
-        - signal: np.ndarray. Señal original.
-        - kernel_size: int. Tamaño del kernel de suavizado.
-        - window: str. Tipo de ventana ('hamming', 'rect', 'gaussian').
-
-        Returns:
-        - np.ndarray. Señal suavizada.
-        """
-        if window == 'hamming':
-            kernel = np.hamming(kernel_size)
-        elif window == 'gaussian':
-            from scipy.signal.windows import gaussian
-            kernel = gaussian(kernel_size, std=kernel_size / 6)
-        elif window == 'rect':
-            kernel = np.ones(kernel_size)
-        else:
-            raise ValueError(f"Ventana no soportada: {window}")
-
-        kernel /= kernel.sum()
-        smoothed = np.convolve(signal, kernel, mode='same')
-        return smoothed
