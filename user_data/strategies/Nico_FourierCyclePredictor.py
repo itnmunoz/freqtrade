@@ -3,10 +3,6 @@ from pandas import DataFrame
 from scipy.signal import savgol_filter, argrelextrema
 import numpy as np
 
-from freqtrade.logger import get_logger
-
-logger = get_logger(__name__)
-
 
 class FourierCycleInflection(IStrategy):
     timeframe = '1m'
@@ -99,12 +95,6 @@ class FourierCycleInflection(IStrategy):
         # Asignar señal y etiqueta
         df.loc[buy_condition, 'buy'] = 1
         df.loc[buy_condition, 'buy_tag'] = 'slope_up'
-
-        # Logging para trazabilidad en tiempo real
-        if df['buy'].iloc[-1] == 1:
-            self.logger.info(
-                f"Buy signal at {df.index[-1]} | slope: {df['cycle_slope'].iloc[-1]:.6f} | tag: {df['buy_tag'].iloc[-1]}"
-            )
 
         return df
 
