@@ -5,7 +5,7 @@ import numpy as np
 
 
 class FourierCycleInflection(IStrategy):
-    timeframe = '1m'
+    timeframe = '5m'
 
     minimal_roi = {
         "0": 0.05,    # 5% en cualquier momento
