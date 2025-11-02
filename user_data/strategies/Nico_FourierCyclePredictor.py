@@ -146,6 +146,23 @@ class FourierCycleInflection(IStrategy):
         smoothed = np.convolve(signal, kernel, mode='same')
         return smoothed
 
+    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                current_profit: float, **kwargs) -> Optional[str]:
+        df = self.dp.get_pair_dataframe(pair, self.timeframe)
+
+        # Asegura que el DataFrame no esté vacío y tenga la columna
+        if df.empty or 'cycle_slope' not in df.columns:
+            return None
+
+        # Evalúa la pendiente en la vela actual
+        last_slope = df['cycle_slope'].iloc[-1]
+
+        # Salida si la pendiente es negativa
+        if last_slope < 0:
+            return 'slope_down'
+
+        return None
+
     '''
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
         mean = np.mean(signal)

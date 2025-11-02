@@ -94,5 +94,8 @@
     "force_entry_enable": true,
     "use_exit_signal": true,
     "exit_profit_only": false,
-    "ignore_roi_if_entry_signal": true
+    "sell_profit_only": false,
+    "ignore_roi_if_entry_signal": true,
+    "force_exit_enable": true,
+    "use_custom_exit": true
 }
