@@ -7,6 +7,8 @@ import numpy as np
 #from typing import Optional
 #from freqtrade.persistence import Trade
 
+import logging
+logger = logging.getLogger(__name__)
 
 class FourierCycleInflection(IStrategy):
     timeframe = '5m'
@@ -100,6 +102,14 @@ class FourierCycleInflection(IStrategy):
         df.loc[buy_condition, 'buy'] = 1
         df.loc[buy_condition, 'buy_tag'] = 'slope_up'
 
+        # Log por vela
+        for i in range(len(df)):
+            if df['buy'].iloc[i] == 1:
+                logger.debug(f"[BUY] {metadata['pair']} | {df.index[i]} | Precio: {df['close'].iloc[i]}")
+
+        # Resumen
+        logger.info(f"[BUY COUNT] {metadata['pair']} | Total señales: {df['buy'].sum()} | Última: {df['buy'].iloc[-1]}")
+
         return df
 
     def populate_sell_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
@@ -120,6 +130,9 @@ class FourierCycleInflection(IStrategy):
 
         df.loc[sell_condition, 'sell'] = 1
         df.loc[sell_condition, 'sell_tag'] = 'slope_down'
+
+        # logging
+        logger.debug(f"[SELL] {metadata['pair']} | Señal activa: {df['sell'].iloc[-1]}")
 
         return df
 

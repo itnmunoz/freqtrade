@@ -1,6 +1,7 @@
 {
     "$schema": "https://schema.freqtrade.io/schema.json",
     "loglevel": "DEBUG",
+    "logfile": "freqtrade.log",
     "startup_candle_count": 300,
     "max_open_trades": 10,
     "stake_currency": "USDC",
