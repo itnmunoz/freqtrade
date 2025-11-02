@@ -102,9 +102,8 @@ class FourierCycleInflection(IStrategy):
         df.loc[df['buy'], 'buy_tag'] = 'slope_up'
 
         # Log por vela
-        for i in range(len(df)):
-            if df['buy'].iloc[i] == 1:
-                logger.debug(f"[BUY] {metadata['pair']} | {df.index[i]} | Precio: {df['close'].iloc[i]}")
+        for i in range(-5, 0):
+            logger.info(f"[{metadata['pair']}] Vela {i} | Fecha: {df.index[i]} | Slope: {df['cycle_slope'].iloc[i]:.4f} | Inflection: {df['inflection'].iloc[i]} | Buy: {df['buy'].iloc[i]} | Tag: {df.get('buy_tag', pd.Series([None]*len(df))).iloc[i]}")
 
         # Resumen
         logger.info(f"[BUY COUNT] {metadata['pair']} | Total señales: {df['buy'].sum()} | Última: {df['buy'].iloc[-1]}")
