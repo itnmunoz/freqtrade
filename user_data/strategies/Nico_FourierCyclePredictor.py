@@ -95,12 +95,11 @@ class FourierCycleInflection(IStrategy):
         df['buy_tag'] = ''
 
         # Condición de entrada: cruce de pendiente negativa a positiva
-        buy_condition = (df['cycle_slope'] > 0) & (
-            df['cycle_slope'].shift(1) <= 0)
+        df['inflection'] = (df['cycle_slope'] > 0) & (df['cycle_slope'].shift(1) <= 0)
+        df['buy'] = df['inflection'].shift(-1).fillna(0).astype(int)
 
-        # Asignar señal y etiqueta
-        df.loc[buy_condition, 'buy'] = 1
-        df.loc[buy_condition, 'buy_tag'] = 'slope_up'
+        # Asignar etiqueta alineada con la señal adelantada
+        df.loc[df['buy'], 'buy_tag'] = 'slope_up'
 
         # Log por vela
         for i in range(len(df)):
