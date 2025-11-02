@@ -101,9 +101,17 @@ class FourierCycleInflection(IStrategy):
         # Asignar etiqueta alineada con la señal adelantada
         df.loc[df['buy'], 'buy_tag'] = 'slope_up'
 
-        # Log por vela
+        # Logging de las últimas 5 velas
         for i in range(-5, 0):
-            logger.info(f"[{metadata['pair']}] Vela {i} | Fecha: {df.index[i]} | Slope: {df['cycle_slope'].iloc[i]:.4f} | Inflection: {df['inflection'].iloc[i]} | Buy: {df['buy'].iloc[i]} | Tag: {df.get('buy_tag', pd.Series([None]*len(df))).iloc[i]}")
+            fecha = df.index[i]
+            slope = df['cycle_slope'].iloc[i]
+            inflection = df['inflection'].iloc[i]
+            buy = df['buy'].iloc[i]
+            tag = df['buy_tag'].iloc[i] if 'buy_tag' in df.columns else None
+
+            logger.info(
+                f"[{metadata['pair']}] Vela {i} | Fecha: {fecha} | Slope: {slope:.4f} | Inflection: {inflection} | Buy: {buy} | Tag: {tag}"
+            )
 
         # Resumen
         logger.info(f"[BUY COUNT] {metadata['pair']} | Total señales: {df['buy'].sum()} | Última: {df['buy'].iloc[-1]}")
