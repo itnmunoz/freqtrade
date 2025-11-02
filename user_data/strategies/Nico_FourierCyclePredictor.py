@@ -99,6 +99,7 @@ class FourierCycleInflection(IStrategy):
         return df
 
     def populate_sell_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+        '''
         df.loc[
             (
                 (df['cycle_slope'] < 0)  # tramo descendente
@@ -106,6 +107,16 @@ class FourierCycleInflection(IStrategy):
             ),
             'sell'
         ] = 1
+        '''
+        # Inicializar columnas si no existen
+        df['sell'] = 0
+        df['sell_tag'] = ''
+
+        sell_condition = df['cycle_slope'] < 0
+
+        df.loc[sell_condition, 'sell'] = 1
+        df.loc[sell_condition, 'sell_tag'] = 'slope_down'
+
         return df
 
     @staticmethod
