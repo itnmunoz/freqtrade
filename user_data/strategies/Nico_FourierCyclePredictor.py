@@ -3,9 +3,9 @@ from pandas import DataFrame
 from scipy.signal import savgol_filter, argrelextrema
 import numpy as np
 
-from datetime import datetime
-from typing import Optional
-from freqtrade.persistence import Trade
+#from datetime import datetime
+#from typing import Optional
+#from freqtrade.persistence import Trade
 
 
 class FourierCycleInflection(IStrategy):
@@ -150,6 +150,7 @@ class FourierCycleInflection(IStrategy):
         smoothed = np.convolve(signal, kernel, mode='same')
         return smoothed
 
+    '''
     def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                 current_profit: float, **kwargs) -> Optional[str]:
         df = self.dp.get_pair_dataframe(pair, self.timeframe)
@@ -166,6 +167,7 @@ class FourierCycleInflection(IStrategy):
             return 'slope_down'
 
         return None
+    '''
 
     '''
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
