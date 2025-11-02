@@ -3,6 +3,10 @@ from pandas import DataFrame
 from scipy.signal import savgol_filter, argrelextrema
 import numpy as np
 
+from datetime import datetime
+from typing import Optional
+from freqtrade.persistence import Trade
+
 
 class FourierCycleInflection(IStrategy):
     timeframe = '5m'
