@@ -86,7 +86,7 @@ class FourierCycleInflection(IStrategy):
         return df
         '''
         # Eliminar índices duplicados para evitar errores de reindexado
-        df = df[~df.index.duplicated(keep='last')]
+        # df = df[~df.index.duplicated(keep='last')]
 
         # Inicializar columnas si no existen
         df['buy'] = 0
