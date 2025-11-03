@@ -58,7 +58,7 @@ class FourierCycleInflection(IStrategy):
 
         # Guarda solo en la última fila
         df.loc[df.index[-1], 'x0_projection'] = x0
-        df.loc[df.index[-1], 'y0_projection'] = y0
+        df.loc[df.index[-1], 'y0_projection'] = y0 + df[df.index[-1], 'cycle_slope_mean']
         df.loc[df.index[-1], 'anticipation'] = anticipation
         # df.loc[df.index[-1], 'buy'] = int(anticipation)  # descomentar para usar
 
@@ -95,12 +95,12 @@ class FourierCycleInflection(IStrategy):
             # smoothed_slope = self.lowpass_filter(slope, kernel_size=7, window='hamming')
             df.loc[df.index[-256:], 'cycle_slope'] = slope  # smoothed_slope
 
-            # 2. Llamar a la función de anticipación
-            df = self.anticipate_inflection(df, slope_col='cycle_slope', lookback=5, horizon=(5, 6))
-
             # Superponer en la gráica en la misma ordenada
             df['cycle_slope_offset'] = df['cycle_slope']*10 + np.mean(signal)
             df['cycle_slope_mean'] = np.mean(signal)
+
+            # Llamar a la función de anticipación
+            df = self.anticipate_inflection(df, slope_col='cycle_slope', lookback=5, horizon=(5, 6))
 
         return df
 
