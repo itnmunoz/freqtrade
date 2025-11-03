@@ -44,8 +44,7 @@ class FourierCycleInflection(IStrategy):
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
 
         # df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
-        ema = ta.EMAIndicator(close=df['close'], window=21, fillna=False)
-        df['cycle'] = ema.ema_indicator()
+        df['cycle'] = ta.EMA(df['close'], timeperiod=21)
 
         df['cycle_slope'] = np.nan
         df['cycle_min'] = np.nan
