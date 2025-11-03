@@ -41,10 +41,33 @@ class FourierCycleInflection(IStrategy):
 
         return reconstructed, prediction
 
+    @staticmethod
+    def anticipate_inflection(df, slope_col='cycle_slope', lookback=5, horizon=(5, 6)):
+        # Inicializa columnas
+        df['x0_projection'] = df.get('x0_projection', np.nan)
+        df['y0_projection'] = df.get('y0_projection', np.nan)
+        df['anticipation'] = df.get('x0_projection', False)
+
+        y = df[slope_col].iloc[-lookback:].values
+        x = np.arange(lookback)
+        m, b = np.polyfit(x, y, 1)
+        x0 = -b / m if m != 0 else np.nan
+        y0 = m * x0 + b  # Valor proyectado en x0 (debería ser ~0)
+
+        anticipation = (x0 >= horizon[0]) and (x0 <= horizon[1])
+
+        # Guarda solo en la última fila
+        df.loc[df.index[-1], 'x0_projection'] = x0
+        df.loc[df.index[-1], 'y0_projection'] = y0
+        df.loc[df.index[-1], 'anticipation'] = anticipation
+        # df.loc[df.index[-1], 'buy'] = int(anticipation)  # descomentar para usar
+
+        return df
+
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
 
         # df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
-        df['cycle'] = ta.EMA(df['close'], timeperiod=21)
+        df['cycle'] = ta.EMA(df['close'], timeperiod=9)
 
         df['cycle_slope'] = np.nan
         df['cycle_min'] = np.nan
@@ -71,6 +94,9 @@ class FourierCycleInflection(IStrategy):
             slope = np.gradient(df['cycle'].values[-256:])
             # smoothed_slope = self.lowpass_filter(slope, kernel_size=7, window='hamming')
             df.loc[df.index[-256:], 'cycle_slope'] = slope  # smoothed_slope
+
+            # 2. Llamar a la función de anticipación
+            df = self.anticipate_inflection(df, slope_col='cycle_slope', lookback=5, horizon=(5, 6))
 
             # Superponer en la gráica en la misma ordenada
             df['cycle_slope_offset'] = df['cycle_slope']*10 + np.mean(signal)
