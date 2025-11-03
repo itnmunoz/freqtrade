@@ -58,7 +58,7 @@ class FourierCycleInflection(IStrategy):
 
         # Guarda solo en la última fila
         df.loc[df.index[-1], 'x0_projection'] = x0
-        df.loc[df.index[-1], 'y0_projection'] = y0 + df[df.index[-1], 'cycle_slope_mean']
+        df.loc[df.index[-1], 'y0_projection'] = y0 + df.loc[df.index[-1], 'cycle_slope_mean']
         df.loc[df.index[-1], 'anticipation'] = anticipation
         # df.loc[df.index[-1], 'buy'] = int(anticipation)  # descomentar para usar
 
