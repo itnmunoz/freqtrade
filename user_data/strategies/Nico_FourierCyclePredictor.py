@@ -2,6 +2,7 @@ from freqtrade.strategy import IStrategy
 from pandas import DataFrame
 from scipy.signal import savgol_filter, argrelextrema
 import numpy as np
+import talib.abstract as ta
 
 #from datetime import datetime
 #from typing import Optional
@@ -42,7 +43,10 @@ class FourierCycleInflection(IStrategy):
 
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
 
-        df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
+        # df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
+        ema = ta.EMAIndicator(close=df['close'], window=21, fillna=False)
+        df['cycle'] = ema.ema_indicator()
+
         df['cycle_slope'] = np.nan
         df['cycle_min'] = np.nan
         df['fourier_pred'] = np.nan
@@ -66,9 +70,8 @@ class FourierCycleInflection(IStrategy):
 
             # Calcular pendiente sobre la señal original suavizada
             slope = np.gradient(df['cycle'].values[-256:])
-            smoothed_slope = self.lowpass_filter(
-                slope, kernel_size=7, window='hamming')
-            df.loc[df.index[-256:], 'cycle_slope'] = smoothed_slope
+            # smoothed_slope = self.lowpass_filter(slope, kernel_size=7, window='hamming')
+            df.loc[df.index[-256:], 'cycle_slope'] = slope  # smoothed_slope
 
             # Superponer en la gráica en la misma ordenada
             df['cycle_slope_offset'] = df['cycle_slope']*10 + np.mean(signal)
