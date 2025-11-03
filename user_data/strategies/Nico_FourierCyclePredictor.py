@@ -44,9 +44,18 @@ class FourierCycleInflection(IStrategy):
     @staticmethod
     def anticipate_inflection(df, slope_col='cycle_slope', lookback=5, horizon=(5, 6)):
         # Inicializa columnas
-        df['x0_projection'] = df.get('x0_projection', np.nan)
-        df['y0_projection'] = df.get('y0_projection', np.nan)
-        df['anticipation'] = df.get('x0_projection', False)
+        if 'x0_projection' not in df.columns:
+            df['x0_projection'] = np.nan
+
+        if 'y0_projection' not in df.columns:
+            df['y0_projection'] = np.nan
+
+        if 'anticipation' not in df.columns:
+            df['anticipation'] = np.nan
+
+        # df['x0_projection'] = df.get('x0_projection', np.nan)
+        # df['y0_projection'] = df.get('y0_projection', np.nan)
+        # df['anticipation'] = df.get('x0_projection', False)
 
         y = df[slope_col].iloc[-lookback:].values
         x = np.arange(lookback)
