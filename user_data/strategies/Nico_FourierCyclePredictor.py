@@ -48,7 +48,7 @@ class FourierCycleInflection(IStrategy):
             if col not in df.columns:
                 df[col] = np.nan
 
-        for i in range(lookback, len(df) - 1):  # evitamos IndexError en shift(1)
+        for i in range(lookback, len(df)):
             mean = df.loc[df.index[i], 'cycle_slope_mean']
 
             y = df[slope_col].iloc[i - lookback:i].values
@@ -108,7 +108,7 @@ class FourierCycleInflection(IStrategy):
             df['cycle_slope_mean'] = np.mean(signal)
 
             # Llamar a la función de anticipación
-            df = self.anticipate_inflection(df, slope_col='cycle_slope', lookback=5, horizon=(5, 6))
+            df = self.anticipate_inflection(df, slope_col='cycle_slope', lookback=4, horizon=(4, 5))
 
         return df
 
