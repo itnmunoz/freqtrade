@@ -48,7 +48,7 @@ class FourierCycleInflection(IStrategy):
             if col not in df.columns:
                 df[col] = np.nan
 
-        for i in range(lookback, len(df) + 1):
+        for i in range(lookback, len(df)):
             mean = df.loc[df.index[i], 'cycle_slope_mean']
 
             y = df[slope_col].iloc[i - lookback:i].values
@@ -60,7 +60,7 @@ class FourierCycleInflection(IStrategy):
                 y0 = m * x0 + b
                 y1 = m * x1 + b
 
-                # Guardamos x0/y0 en la fila pasada, x1/y1 en la actual
+                # Guardamos x0/y0, x1/y1
                 df.loc[df.index[i], 'x0_proj'] = x0
                 df.loc[df.index[i], 'y0_proj'] = y0 + mean
                 df.loc[df.index[i], 'x1_proj'] = x1
