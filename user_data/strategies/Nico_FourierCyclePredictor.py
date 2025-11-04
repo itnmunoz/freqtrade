@@ -108,7 +108,7 @@ class FourierCycleInflection(IStrategy):
             df['cycle_slope_mean'] = np.mean(signal)
 
             # Llamar a la función de anticipación
-            df = self.anticipate_inflection(df, slope_col='cycle_slope', lookback=4, horizon=(4, 5))
+            df = self.anticipate_inflection(df, slope_col='cycle_slope', lookback=3, horizon=(3, 4))
 
         return df
 
