@@ -43,33 +43,32 @@ class FourierCycleInflection(IStrategy):
 
     @staticmethod
     def anticipate_inflection(df, slope_col='cycle_slope', lookback=5, horizon=(5, 6)):
-        # Inicializa columnas
-        if 'x0_projection' not in df.columns:
-            df['x0_projection'] = np.nan
+        # Inicializa columnas si no existen
+        for col in ['x_proj', 'y_proj']:
+            if col not in df.columns:
+                df[col] = np.nan
 
-        if 'y0_projection' not in df.columns:
-            df['y0_projection'] = np.nan
+        for i in range(lookback, len(df) - 1):  # evitamos IndexError en shift(1)
+            mean = df.loc[df.index[i], 'cycle_slope_mean']
 
-        if 'anticipation' not in df.columns:
-            df['anticipation'] = np.nan
+            y = df[slope_col].iloc[i - lookback:i].values
+            x = np.arange(lookback)
+            m, b = np.polyfit(x, y, 1)
 
-        # df['x0_projection'] = df.get('x0_projection', np.nan)
-        # df['y0_projection'] = df.get('y0_projection', np.nan)
-        # df['anticipation'] = df.get('x0_projection', False)
+            if np.isfinite(m) and np.abs(m) > 1e-6 and np.isfinite(b):
+                x0, x1 = horizon
+                y0 = m * x0 + b
+                y1 = m * x1 + b
 
-        y = df[slope_col].iloc[-lookback:].values
-        x = np.arange(lookback)
-        m, b = np.polyfit(x, y, 1)
-        x0 = -b / m if m != 0 else np.nan
-        y0 = m * x0 + b  # Valor proyectado en x0 (debería ser ~0)
+                # Guardamos x0/y0 en la fila pasada, x1/y1 en la actual
+                df.loc[df.index[i - 1], 'x_proj'] = x0
+                df.loc[df.index[i - 1], 'y_proj'] = y0 + mean
+                df.loc[df.index[i], 'x_proj'] = x1
+                df.loc[df.index[i], 'y_proj'] = y1 + mean
 
-        anticipation = (x0 >= horizon[0]) and (x0 <= horizon[1])
-
-        # Guarda solo en la última fila
-        df.loc[df.index[-1], 'x0_projection'] = x0
-        df.loc[df.index[-1], 'y0_projection'] = y0 + df.loc[df.index[-1], 'cycle_slope_mean']
-        df.loc[df.index[-1], 'anticipation'] = anticipation
-        # df.loc[df.index[-1], 'buy'] = int(anticipation)  # descomentar para usar
+        # Estrategia TODO
+        # df.loc[df.index[-1], 'anticipation'] = anticipation
+        # df.loc[df.index[-1], 'buy'] = int(anticipation)
 
         return df
 
