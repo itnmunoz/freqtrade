@@ -48,7 +48,7 @@ class FourierCycleInflection(IStrategy):
             if col not in df.columns:
                 df[col] = np.nan
 
-        for i in range(lookback, len(df)):
+        for i in range(lookback, len(df) + 1):
             mean = df.loc[df.index[i], 'cycle_slope_mean']
 
             y = df[slope_col].iloc[i - lookback:i].values
@@ -75,7 +75,7 @@ class FourierCycleInflection(IStrategy):
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
 
         # df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
-        df['cycle'] = ta.EMA(df['close'], timeperiod=9)
+        df['cycle'] = ta.EMA(df['close'], timeperiod=7)
 
         df['cycle_slope'] = np.nan
         df['cycle_min'] = np.nan
