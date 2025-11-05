@@ -62,9 +62,9 @@ class FourierCycleInflection(IStrategy):
 
                 # Guardamos x0/y0, x1/y1
                 df.loc[df.index[i], 'x0_proj'] = x0
-                df.loc[df.index[i], 'y0_proj'] = y0 + mean
+                df.loc[df.index[i], 'y0_proj'] = y0*10 + mean
                 df.loc[df.index[i], 'x1_proj'] = x1
-                df.loc[df.index[i], 'y1_proj'] = y1 + mean
+                df.loc[df.index[i], 'y1_proj'] = y1*10 + mean
 
         # Estrategia TODO
         # df.loc[df.index[-1], 'anticipation'] = anticipation
