@@ -49,9 +49,9 @@ class FourierCycleInflection(IStrategy):
                 df[col] = np.nan
 
         for i in range(lookback, len(df)):
-            #mean = df.loc[df.index[i], 'cycle_slope_mean']
+            # mean = df.loc[df.index[i], 'cycle_slope_mean']
 
-            y = df[slope_col].iloc[i - lookback:i].values
+            y = df[slope_col].iloc[i - lookback + 1:i + 1].values
             x = np.arange(lookback)
             m, b = np.polyfit(x, y, 1)
 
