@@ -42,14 +42,14 @@ class FourierCycleInflection(IStrategy):
         return reconstructed, prediction
 
     @staticmethod
-    def anticipate_inflection(df, slope_col='cycle_slope', lookback=5, horizon=(5, 6)):
+    def anticipate_inflection(df, slope_col='cycle_slope', lookback=3, horizon=(3, 4)):
         # Inicializa columnas si no existen
         for col in ['x0_proj', 'y0_proj', 'x1_proj', 'y1_proj']:
             if col not in df.columns:
                 df[col] = np.nan
 
         for i in range(lookback, len(df)):
-            mean = df.loc[df.index[i], 'cycle_slope_mean']
+            #mean = df.loc[df.index[i], 'cycle_slope_mean']
 
             y = df[slope_col].iloc[i - lookback:i].values
             x = np.arange(lookback)
@@ -62,9 +62,9 @@ class FourierCycleInflection(IStrategy):
 
                 # Guardamos x0/y0, x1/y1
                 df.loc[df.index[i], 'x0_proj'] = x0
-                df.loc[df.index[i], 'y0_proj'] = y0*10 + mean
+                df.loc[df.index[i], 'y0_proj'] = y0
                 df.loc[df.index[i], 'x1_proj'] = x1
-                df.loc[df.index[i], 'y1_proj'] = y1*10 + mean
+                df.loc[df.index[i], 'y1_proj'] = y1
 
         # Estrategia TODO
         # df.loc[df.index[-1], 'anticipation'] = anticipation
@@ -108,7 +108,7 @@ class FourierCycleInflection(IStrategy):
             df['cycle_slope_mean'] = np.mean(signal)
 
             # Llamar a la función de anticipación
-            df = self.anticipate_inflection(df, slope_col='cycle_slope', lookback=3, horizon=(3, 4))
+            df = self.anticipate_inflection(df, slope_col='cycle_slope_offset', lookback=3, horizon=(3, 4))
 
         return df
 
