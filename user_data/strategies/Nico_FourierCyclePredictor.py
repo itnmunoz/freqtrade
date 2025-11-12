@@ -4,20 +4,21 @@ from scipy.signal import savgol_filter, argrelextrema
 import numpy as np
 import talib.abstract as ta
 
-#from datetime import datetime
-#from typing import Optional
-#from freqtrade.persistence import Trade
+# from datetime import datetime
+# from typing import Optional
+# from freqtrade.persistence import Trade
 
 import logging
 logger = logging.getLogger(__name__)
+
 
 class FourierCycleInflection(IStrategy):
     timeframe = '5m'
 
     minimal_roi = {
-        "0": 0.05,    # 5% en cualquier momento
-        "60": 0.02,   # 3% después de 60 minutos
-        "120": 0.01,  # 1% después de 120 minutos
+        "0": 0.05,
+        "60": 0.02,
+        "120": 0.01,
         "180": 0
     }
 
@@ -72,6 +73,48 @@ class FourierCycleInflection(IStrategy):
 
         return df
 
+    @staticmethod
+    def detect_cycle_frequency(df, slope_col='cycle_slope', window=10, max_turns=2):
+        """
+        Detecta frecuencia direccional en una serie de pendientes.
+        Marca como válidas las zonas donde hay pocos giros de dirección (baja frecuencia).
+
+        Parámetros:
+        - df: DataFrame con la serie.
+        - slope_col: columna que contiene la pendiente del ciclo.
+        - window: tamaño de la ventana móvil.
+        - max_turns: número máximo de giros permitidos para considerar el ciclo válido.
+
+        Devuelve:
+        - df con columnas 'slope_sign', 'turns', 'valid_cycle'.
+        """
+        # Signo de la pendiente (+1, -1, 0)
+        df['slope_sign'] = np.sign(df[slope_col])
+
+        # Cuenta cambios de signo en la ventana
+        df['turns'] = df['slope_sign'].rolling(window=window).apply(
+            lambda x: np.count_nonzero(np.diff(x) != 0), raw=True
+        )
+
+        # Máscara booleana: zonas con pocos giros
+        df['valid_cycle'] = df['turns'] <= max_turns
+
+        return df
+
+    @staticmethod
+    def detect_slope_trend(df, slope_col='cycle_slope'):
+        """
+        Detecta si las últimas 3 velas muestran una pendiente creciente en cycle_slope.
+        Marca True en 'cycle_slope_trend' si se cumple la condición.
+        """
+        df['cycle_slope_trend'] = (
+            (df[slope_col].shift(3) < df[slope_col].shift(2)) &
+            (df[slope_col].shift(2) < df[slope_col].shift(1)) &
+            (df[slope_col].shift(1) < df[slope_col])
+        )
+
+        return df
+
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
 
         # df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
@@ -108,7 +151,10 @@ class FourierCycleInflection(IStrategy):
             df['cycle_slope_mean'] = np.mean(signal)
 
             # Llamar a la función de anticipación
-            df = self.anticipate_inflection(df, slope_col='cycle_slope_offset', lookback=3, horizon=(3, 4))
+            df = self.anticipate_inflection(
+                df, slope_col='cycle_slope_offset', lookback=3, horizon=(3, 4))
+            
+            df = self.detect_slope_trend(df, slope_col='cycle_slope')
 
         return df
 
@@ -117,7 +163,8 @@ class FourierCycleInflection(IStrategy):
         df.loc[
             (
                 (df['cycle_slope'] > 0) &
-                (df['cycle_slope'].shift(1) <= 0)
+                (df['cycle_slope'].shift(1) <= 0) &
+                (dataframe['cycle_slope_trend'])
             ),
             'buy'
         ] = 1
@@ -131,7 +178,8 @@ class FourierCycleInflection(IStrategy):
         df['buy_tag'] = ''
 
         # Condición de entrada: cruce de pendiente negativa a positiva
-        df['inflection'] = (df['cycle_slope'] > 0) & (df['cycle_slope'].shift(1) <= 0)
+        df['inflection'] = (df['cycle_slope'] > 0) & (
+            df['cycle_slope'].shift(1) <= 0)
         df['buy'] = df['inflection'].astype(int)
 
         # Asignar etiqueta alineada con la señal adelantada
@@ -150,7 +198,8 @@ class FourierCycleInflection(IStrategy):
             )
 
         # Resumen
-        logger.info(f"[BUY COUNT] {metadata['pair']} | Total señales: {df['buy'].sum()} | Última: {df['buy'].iloc[-1]}")
+        logger.info(
+            f"[BUY COUNT] {metadata['pair']} | Total señales: {df['buy'].sum()} | Última: {df['buy'].iloc[-1]}")
 
         return df
 
@@ -174,7 +223,8 @@ class FourierCycleInflection(IStrategy):
         df.loc[sell_condition, 'sell_tag'] = 'slope_down'
 
         # logging
-        logger.debug(f"[SELL] {metadata['pair']} | Señal activa: {df['sell'].iloc[-1]}")
+        logger.debug(
+            f"[SELL] {metadata['pair']} | Señal activa: {df['sell'].iloc[-1]}")
 
         return df
 

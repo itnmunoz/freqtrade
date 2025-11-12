@@ -94,10 +94,10 @@
         "process_throttle_secs": 5
     },
     "force_entry_enable": true,
-    "force_exit_enable": true,
     "use_entry_signal": true,
+    "force_exit_enable": false,
     "use_exit_signal": true,
     "exit_profit_only": false,
-    "ignore_roi_if_entry_signal": true,
+    "ignore_roi_if_entry_signal": false,
     "x_use_custom_exit": true
 }
