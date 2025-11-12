@@ -164,7 +164,7 @@ class FourierCycleInflection(IStrategy):
             (
                 (df['cycle_slope'] > 0) &
                 (df['cycle_slope'].shift(1) <= 0) &
-                (dataframe['cycle_slope_trend'])
+                (df['cycle_slope_trend'])
             ),
             'buy'
         ] = 1
