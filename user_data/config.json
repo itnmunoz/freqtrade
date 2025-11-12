@@ -88,7 +88,7 @@
         "username": "freqtrader",
         "password": "animolocas"
     },
-    "bot_name": "cryptobot",
+    "bot_name": "botmalote",
     "initial_state": "running",
     "internals": {
         "process_throttle_secs": 5

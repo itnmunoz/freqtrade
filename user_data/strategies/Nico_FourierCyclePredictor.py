@@ -153,7 +153,7 @@ class FourierCycleInflection(IStrategy):
             # Llamar a la función de anticipación
             df = self.anticipate_inflection(
                 df, slope_col='cycle_slope_offset', lookback=3, horizon=(3, 4))
-            
+
             df = self.detect_slope_trend(df, slope_col='cycle_slope')
 
         return df
@@ -177,9 +177,9 @@ class FourierCycleInflection(IStrategy):
         df['buy'] = 0
         df['buy_tag'] = ''
 
-        # Condición de entrada: cruce de pendiente negativa a positiva
-        df['inflection'] = (df['cycle_slope'] > 0) & (
-            df['cycle_slope'].shift(1) <= 0)
+        # Condición de entrada: cruce de pendiente negativa a positiva y pendiente derivada creciente en 3 velas seguidas
+        df['inflection'] = (df['cycle_slope'] > 0) & (df['cycle_slope'].shift(1) <= 0) & (df['cycle_slope_trend'])
+
         df['buy'] = df['inflection'].astype(int)
 
         # Asignar etiqueta alineada con la señal adelantada
