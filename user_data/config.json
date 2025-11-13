@@ -103,7 +103,6 @@
     "order_types": {
         "entry": "market",
         "exit": "market",
-        "sell": "market",
         "roi": "limit",
         "stoploss": "market"
     },
