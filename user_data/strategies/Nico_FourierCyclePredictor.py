@@ -4,9 +4,9 @@ from scipy.signal import savgol_filter, argrelextrema
 import numpy as np
 import talib.abstract as ta
 
-# from datetime import datetime
-# from typing import Optional
-# from freqtrade.persistence import Trade
+from datetime import datetime
+from typing import Optional, Tuple
+from freqtrade.persistence import Trade
 
 import logging
 logger = logging.getLogger(__name__)
@@ -16,8 +16,8 @@ class FourierCycleInflection(IStrategy):
     timeframe = '5m'
 
     minimal_roi = {
-        "0": 0.05,
-        "60": 0.02,
+        "0": 0.02,
+        "60": 0.015,
         "120": 0.01,
         "180": 0
     }
@@ -178,13 +178,15 @@ class FourierCycleInflection(IStrategy):
         df['buy_tag'] = ''
 
         # Condición de entrada: cruce de pendiente negativa a positiva y pendiente derivada creciente en 3 velas seguidas
-        df['inflection'] = (df['cycle_slope'] > 0) & (df['cycle_slope'].shift(1) <= 0) & (df['cycle_slope_trend'])
+        df['inflection'] = (df['cycle_slope'] > 0) & (
+            df['cycle_slope'].shift(1) <= 0) & (df['cycle_slope_trend'])
 
         df['buy'] = df['inflection'].astype(int)
 
         # Asignar etiqueta alineada con la señal adelantada
         df.loc[df['buy'], 'buy_tag'] = 'slope_up'
 
+        '''
         # Logging de las últimas 5 velas
         for i in range(-5, 0):
             fecha = df.index[i]
@@ -196,6 +198,7 @@ class FourierCycleInflection(IStrategy):
             logger.info(
                 f"[{metadata['pair']}] Vela {i} | Fecha: {fecha} | Slope: {slope:.4f} | Inflection: {inflection} | Buy: {buy} | Tag: {tag}"
             )
+        '''
 
         # Resumen
         logger.info(
@@ -227,6 +230,18 @@ class FourierCycleInflection(IStrategy):
             f"[SELL] {metadata['pair']} | Señal activa: {df['sell'].iloc[-1]}")
 
         return df
+
+    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, **kwargs) -> Optional[Tuple[str, str]]:
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        last_candle = dataframe.iloc[-1]
+
+        # Verifica si hay señal de salida
+        if last_candle.get('sell', 0) == 1:
+            sell_tag = last_candle.get('sell_tag', 'custom_exit')
+            return "sell", sell_tag
+
+        return None
 
     @staticmethod
     def lowpass_filter(signal: np.ndarray, kernel_size: int = 5, window: str = 'hamming') -> np.ndarray:
