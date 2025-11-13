@@ -104,8 +104,8 @@
         "entry": "market",
         "exit": "market",
         "roi": "limit",
-        "stoploss": "market"
-    },
-    "stoploss_on_exchange": true,
-    "stoploss_on_exchange_interval": 60
+        "stoploss": "market",
+        "stoploss_on_exchange": true,
+        "stoploss_on_exchange_interval": 60
+    }
 }
