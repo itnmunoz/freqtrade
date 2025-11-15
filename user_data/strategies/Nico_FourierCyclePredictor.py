@@ -178,7 +178,7 @@ class FourierCycleInflection(IStrategy):
 
         # Se nos pasa el punto de inflexión y hay fuerte tendencia creciente hasta el máximo local
         regression_2 = (df['cycle_slope'].shift(2) > 0) & (df['cycle_slope'].shift(1) > 0) & (
-            df['cycle_slope'] > 0) & ((df['cycle_slope'] > df['cycle_slope'].shift(1)) | (df['cycle_slope'] > df['cycle_slope'].shift(2)))
+            df['cycle_slope'] > 0) & ((df['cycle_slope'] > df['cycle_slope'].shift(1)) | (df['cycle_slope'].shift(1) > df['cycle_slope'].shift(2)))
 
         # BIT OR
         df['inflection'] = prediction_0 | prediction_1 | regression_1 | regression_2
