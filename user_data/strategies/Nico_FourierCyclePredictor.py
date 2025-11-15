@@ -201,7 +201,7 @@ class FourierCycleInflection(IStrategy):
         # Anticipar la salida si la predicción a una muestra en la derivada prevé inflexión
         exit_prediction_1 = (df['y0_proj'] < 0) & (df['y0_proj'].shift(1) >= 0) & (df['y0_proj'].shift(2) > df['y0_proj'].shift(1))
 
-        exit_condition = exit_prediction_0 | exit_prediction_1
+        exit_condition = (exit_prediction_0 | exit_prediction_1) & (~df['enter_long'])
 
         df.loc[exit_condition, 'exit_long'] = 1
         df.loc[exit_condition, 'exit_tag'] = 'slope_down'
