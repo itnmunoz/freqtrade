@@ -67,10 +67,6 @@ class FourierCycleInflection(IStrategy):
                 df.loc[df.index[i], 'x1_proj'] = x1
                 df.loc[df.index[i], 'y1_proj'] = y1
 
-        # Estrategia TODO
-        # df.loc[df.index[-1], 'anticipation'] = anticipation
-        # df.loc[df.index[-1], 'buy'] = int(anticipation)
-
         return df
 
     @staticmethod
@@ -127,6 +123,7 @@ class FourierCycleInflection(IStrategy):
 
         if len(df) >= 256:
             signal = df['cycle'].values[-256:]
+            mean = np.mean(signal)
 
             '''
             reconstructed, pred = self.fourier_predict(signal)
@@ -147,13 +144,15 @@ class FourierCycleInflection(IStrategy):
             df.loc[df.index[-256:], 'cycle_slope'] = slope  # smoothed_slope
 
             # Superponer en la gráica en la misma ordenada
-            df['cycle_slope_offset'] = df['cycle_slope']*10 + np.mean(signal)
-            df['cycle_slope_mean'] = np.mean(signal)
+            df['cycle_slope_offset'] = df['cycle_slope']*10 + mean
+            df['cycle_slope_mean'] = mean
 
             # Llamar a la función de anticipación
-            df = self.anticipate_inflection(
-                df, slope_col='cycle_slope_offset', lookback=3, horizon=(3, 4))
+            df = self.anticipate_inflection(df, slope_col='cycle_slope', lookback=3, horizon=(3, 4))
+            df['y0_proj_offset'] = df['y0_proj']*10 + mean
+            df['y1_proj_offset'] = df['y1_proj']*10 + mean
 
+            # Tendencia 4 velas -> Hacer en populate_entry_trend
             df = self.detect_slope_trend(df, slope_col='cycle_slope')
 
         return df
@@ -181,7 +180,7 @@ class FourierCycleInflection(IStrategy):
         regression_1 = (
             (df['cycle_slope'] > df['cycle_slope'].shift(1)) &
             (df['cycle_slope'].shift(1) > df['cycle_slope'].shift(2)) &
-            (df['cycle_slope'].shift(2) > 0) | (df['cycle_slope'].shift(1) > 0) | (df['cycle_slope'] > 0)
+            ((df['cycle_slope'].shift(2) > 0) | (df['cycle_slope'].shift(1) > 0) | (df['cycle_slope'] > 0))
         )
 
         # Se nos pasa el punto de inflexión y hay fuerte tendencia creciente hasta el máximo local
