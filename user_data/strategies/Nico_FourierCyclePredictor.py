@@ -171,13 +171,14 @@ class FourierCycleInflection(IStrategy):
         prediction_1 = (df['y0_proj'] > 0) & (df['y0_proj'].shift(
             1) <= 0) & (df['y0_proj'].shift(2) < df['y0_proj'].shift(1))
 
-        # Se nos pasa el punto de inflexion, tendencia 3 velas con tendencia creciente
+        # Se nos pasa el punto de inflexion, tendencia 3 velas con tendencia todas creciente
         regression_1 = (df['cycle_slope'] > df['cycle_slope'].shift(1)) & (
             df['cycle_slope'].shift(1) > df['cycle_slope'].shift(2)) & (
             (df['cycle_slope'].shift(2) > 0) | (df['cycle_slope'].shift(1) > 0) | (df['cycle_slope'] > 0))
 
-        # Se nos pasa el punto de inflexión y hay fuerte tendencia creciente
-        regression_2 = (df['cycle_slope'].shift(2) > 0) & (df['cycle_slope'].shift(1) > 0) & (df['cycle_slope'] > 0)
+        # Se nos pasa el punto de inflexión y hay fuerte tendencia creciente hasta el máximo local
+        regression_2 = (df['cycle_slope'].shift(2) > 0) & (df['cycle_slope'].shift(1) > 0) & (
+            df['cycle_slope'] > 0) & (df['cycle_slope'] > df['cycle_slope'].shift(1) | df['cycle_slope'] > df['cycle_slope'].shift(2))
 
         # BIT OR
         df['inflection'] = prediction_0 | prediction_1 | regression_1 | regression_2
@@ -205,7 +206,8 @@ class FourierCycleInflection(IStrategy):
         exit_prediction_1 = (df['y0_proj'] < 0) & (df['y0_proj'].shift(
             1) >= 0) & (df['y0_proj'].shift(2) > df['y0_proj'].shift(1))
 
-        exit_condition = (exit_prediction_0 | exit_prediction_1) & (~df['enter_long'])
+        exit_condition = (exit_prediction_0 | exit_prediction_1) & (
+            ~df['enter_long'])
 
         df.loc[exit_condition, 'exit_long'] = 1
         df.loc[exit_prediction_0 & ~df['enter_long'], 'exit_tag'] = 'slope_down'
