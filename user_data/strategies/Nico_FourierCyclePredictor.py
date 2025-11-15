@@ -194,8 +194,8 @@ class FourierCycleInflection(IStrategy):
         )
 
         # BIT OR
-        df['inflection'] = prediction_0 | prediction_1 | regression_1
-        
+        df['inflection'] = prediction_0 | prediction_1
+
         df['enter_long'] = df['inflection'].astype(int)
 
         # Asignar etiqueta alineada con la señal adelantada
