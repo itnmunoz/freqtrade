@@ -158,90 +158,73 @@ class FourierCycleInflection(IStrategy):
 
         return df
 
-    def populate_buy_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        '''
-        df.loc[
-            (
-                (df['cycle_slope'] > 0) &
-                (df['cycle_slope'].shift(1) <= 0) &
-                (df['cycle_slope_trend'])
-            ),
-            'buy'
-        ] = 1
-        return df
-        '''
-        # Eliminar índices duplicados para evitar errores de reindexado
-        # df = df[~df.index.duplicated(keep='last')]
-
+    def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         # Inicializar columnas si no existen
-        df['buy'] = 0
-        df['buy_tag'] = ''
+        # df['enter_long'] = 0
+        # df['enter_tag'] = ''
 
-        # Condición de entrada: cruce de pendiente negativa a positiva y pendiente derivada creciente en 3 velas seguidas
-        df['inflection'] = (df['cycle_slope'] > 0) & (
+        # Con datos actuales: cruce de pendiente negativa a positiva y tendencia creciente en derivada 4 muestras seguidas
+        prediction_0 = (df['cycle_slope'] > 0) & (
             df['cycle_slope'].shift(1) <= 0) & (df['cycle_slope_trend'])
 
-        df['buy'] = df['inflection'].astype(int)
+        # El predictor a una muestra futura hace inflexión y tendencia creciente en derivada 3 muestras seguidas
+        prediction_1 = (df['y0_proj'] > 0) & (df['y0_proj'].shift(
+            1) <= 0) & (df['y0_proj'].shift(2) < df['y0_proj'].shift(1))
+
+        # Se nos pasa el punto de inflexion, tendencia 3 velas con tendencia creciente
+        regression = (df['cycle_slope'] > df['cycle_slope'].shift(1)) & (
+            df['cycle_slope'].shift(1) > df['cycle_slope'].shift(2)) & (
+            df['cycle_slope'].shift(2) > 0)
+
+        # BIT OR
+        df['inflection'] = prediction_0 | prediction_1 | regression
+
+        df['enter_long'] = df['inflection'].astype(int)
 
         # Asignar etiqueta alineada con la señal adelantada
-        df.loc[df['buy'], 'buy_tag'] = 'slope_up'
-
-        '''
-        # Logging de las últimas 5 velas
-        for i in range(-5, 0):
-            fecha = df.index[i]
-            slope = df['cycle_slope'].iloc[i]
-            inflection = df['inflection'].iloc[i]
-            buy = df['buy'].iloc[i]
-            tag = df['buy_tag'].iloc[i] if 'buy_tag' in df.columns else None
-
-            logger.info(
-                f"[{metadata['pair']}] Vela {i} | Fecha: {fecha} | Slope: {slope:.4f} | Inflection: {inflection} | Buy: {buy} | Tag: {tag}"
-            )
-        '''
+        df.loc[df['enter_long'], 'enter_tag'] = 'slope_up'
 
         # Resumen
         logger.info(
-            f"[BUY COUNT] {metadata['pair']} | Total señales: {df['buy'].sum()} | Última: {df['buy'].iloc[-1]}")
+            f"[ENTRY COUNT] {metadata['pair']} | Total señales: {df['enter_long'].sum()} | Última: {df['enter_long'].iloc[-1]}")
 
         return df
 
-    def populate_sell_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
-        '''
-        df.loc[
-            (
-                (df['cycle_slope'] < 0)  # tramo descendente
-                # (df['fourier_pred'] < df['close']) &
-            ),
-            'sell'
-        ] = 1
-        '''
+    def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         # Inicializar columnas si no existen
-        df['sell'] = 0
-        df['sell_tag'] = ''
+        # df['exit_long'] = 0
+        # df['exit_tag'] = ''
 
-        sell_condition = df['cycle_slope'] < 0
+        # Con dactos actuales pendiente negativa
+        exit_prediction_0 = (df['cycle_slope'] < 0)
 
-        df.loc[sell_condition, 'sell'] = 1
-        df.loc[sell_condition, 'sell_tag'] = 'slope_down'
+        # Anticipar la salida si la predicción a una muestra en la derivada prevé inflexión
+        exit_prediction_1 = (df['y0_proj'] < 0) & (df['y0_proj'].shift(1) >= 0) & (df['y0_proj'].shift(2) > df['y0_proj'].shift(1))
+
+        exit_condition = exit_prediction_0 | exit_prediction_1
+
+        df.loc[exit_condition, 'exit_long'] = 1
+        df.loc[exit_condition, 'exit_tag'] = 'slope_down'
 
         # logging
         logger.debug(
-            f"[SELL] {metadata['pair']} | Señal activa: {df['sell'].iloc[-1]}")
+            f"[exit] {metadata['pair']} | Señal activa: {df['exit_long'].iloc[-1]}")
 
         return df
 
+    '''
     def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs) -> Optional[Tuple[str, str]]:
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         last_candle = dataframe.iloc[-1]
 
         # Verifica si hay señal de salida
-        if last_candle.get('sell', 0) == 1:
-            sell_tag = last_candle.get('sell_tag', 'custom_exit')
-            return "sell", sell_tag
+        if last_candle.get('exit_long', 0) == 1:
+            exit_tag = last_candle.get('exit_tag', 'custom_exit')
+            return "sell", exit_tag
 
         return None
+    '''
 
     @staticmethod
     def lowpass_filter(signal: np.ndarray, kernel_size: int = 5, window: str = 'hamming') -> np.ndarray:
