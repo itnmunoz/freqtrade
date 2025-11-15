@@ -164,21 +164,34 @@ class FourierCycleInflection(IStrategy):
         # df['enter_tag'] = ''
 
         # Con datos actuales: cruce de pendiente negativa a positiva y tendencia creciente en derivada 4 muestras seguidas
-        prediction_0 = (df['cycle_slope'] > 0) & (
-            df['cycle_slope'].shift(1) <= 0) & (df['cycle_slope_trend'])
+        prediction_0 = (
+            (df['cycle_slope'] > 0) &
+            (df['cycle_slope'].shift(1) <= 0) &
+            (df['cycle_slope_trend'])
+        )
 
         # El predictor a una muestra futura hace inflexión y tendencia creciente en derivada 3 muestras seguidas
-        prediction_1 = (df['y0_proj'] > 0) & (df['y0_proj'].shift(
-            1) <= 0) & (df['y0_proj'].shift(2) < df['y0_proj'].shift(1))
+        prediction_1 = (
+            (df['y0_proj'] > 0) &
+            (df['y0_proj'].shift(1) <= 0) &
+            (df['y0_proj'].shift(2) < df['y0_proj'].shift(1))
+        )
 
         # Se nos pasa el punto de inflexion, tendencia 3 velas con tendencia todas creciente
-        regression_1 = (df['cycle_slope'] > df['cycle_slope'].shift(1)) & (
-            df['cycle_slope'].shift(1) > df['cycle_slope'].shift(2)) & (
-            (df['cycle_slope'].shift(2) > 0) | (df['cycle_slope'].shift(1) > 0) | (df['cycle_slope'] > 0))
+        regression_1 = (
+            (df['cycle_slope'] > df['cycle_slope'].shift(1)) &
+            (df['cycle_slope'].shift(1) > df['cycle_slope'].shift(2)) &
+            (df['cycle_slope'].shift(2) > 0) | (df['cycle_slope'].shift(1) > 0) | (df['cycle_slope'] > 0)
+        )
 
         # Se nos pasa el punto de inflexión y hay fuerte tendencia creciente hasta el máximo local
-        regression_2 = (df['cycle_slope'].shift(2) > 0) & (df['cycle_slope'].shift(1) > 0) & (
-            df['cycle_slope'] > 0) & ((df['cycle_slope'] > df['cycle_slope'].shift(1)) | (df['cycle_slope'].shift(1) > df['cycle_slope'].shift(2)))
+        regression_2 = (
+            (df['cycle_slope'].shift(2) > 0) &
+            (df['cycle_slope'].shift(1) > 0) &
+            (df['cycle_slope'] > 0) &
+            (df['cycle_slope'] > df['cycle_slope'].shift(1)) &
+            (df['cycle_slope'].shift(1) > df['cycle_slope'].shift(2))
+        )
 
         # BIT OR
         df['inflection'] = prediction_0 | prediction_1 | regression_1 | regression_2
