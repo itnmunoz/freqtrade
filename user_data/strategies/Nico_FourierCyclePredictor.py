@@ -216,7 +216,7 @@ class FourierCycleInflection(IStrategy):
         # Con dactos actuales pendiente negativa y que no se acabe de entrar en la vela anterior
         exit_prediction_0 = (
             (df['cycle_slope'] < 0) &
-            (~df['enter_long'].shift(1).fillna(False).astype(bool))
+            (~df['enter_long'].shift(1).astype(bool))
         )
 
         # Anticipar la salida si la predicción a una muestra en la derivada prevé inflexión
