@@ -218,6 +218,7 @@ class FourierCycleInflection(IStrategy):
         # Con dactos actuales pendiente negativa y que no se acabe de entrar en la vela anterior
         exit_prediction_0 = (
             (df['cycle_slope'] < 0) &
+            (df['cycle_slope'].shift(1) >= 0) &
             (~df['enter_long'].shift(1).astype(bool))
         )
 
@@ -228,7 +229,7 @@ class FourierCycleInflection(IStrategy):
             (df['y0_proj'].shift(2) > df['y0_proj'].shift(1))
         )
 
-        exit_condition = (exit_prediction_1) & (~df['enter_long'])
+        exit_condition = (exit_prediction_0) & (~df['enter_long'])
 
         df.loc[exit_condition, 'exit_long'] = True
         df.loc[exit_prediction_0 & ~df['enter_long'], 'exit_tag'] = 'slope_down'
