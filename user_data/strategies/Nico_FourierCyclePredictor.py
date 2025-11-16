@@ -228,7 +228,7 @@ class FourierCycleInflection(IStrategy):
             (df['y0_proj'].shift(2) > df['y0_proj'].shift(1))
         )
 
-        exit_condition = (exit_prediction_0 | exit_prediction_1) & (~df['enter_long'])
+        exit_condition = (exit_prediction_1) & (~df['enter_long'])
 
         df.loc[exit_condition, 'exit_long'] = True
         df.loc[exit_prediction_0 & ~df['enter_long'], 'exit_tag'] = 'slope_down'
