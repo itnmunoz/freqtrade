@@ -195,7 +195,7 @@ class FourierCycleInflection(IStrategy):
         # BIT OR
         df['inflection'] = prediction_0 | prediction_1 | regression_1
 
-        df['enter_long'] = df['inflection'].astype(bool)
+        df['enter_long'] = df['inflection'].astype(int)
 
         # Asignar etiqueta alineada con la señal adelantada
         df.loc[df['enter_long'] & prediction_0, 'enter_tag'] = 'slope_up'
@@ -216,7 +216,7 @@ class FourierCycleInflection(IStrategy):
         # Con dactos actuales pendiente negativa y que no se acabe de entrar en la vela anterior
         exit_prediction_0 = (
             (df['cycle_slope'] < 0) &
-            (~df['enter_long'].shift(1).fillna(False))
+            (~df['enter_long'].shift(1))
         )
 
         # Anticipar la salida si la predicción a una muestra en la derivada prevé inflexión
