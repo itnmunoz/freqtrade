@@ -193,12 +193,14 @@ class FourierCycleInflection(IStrategy):
         )
 
         # BIT OR
-        df['inflection'] = prediction_0 | prediction_1
+        df['inflection'] = prediction_0 | prediction_1 | regression_1
 
         df['enter_long'] = df['inflection'].astype(int)
 
         # Asignar etiqueta alineada con la señal adelantada
-        df.loc[df['enter_long'], 'enter_tag'] = 'slope_up'
+        df.loc[df['enter_long'] & prediction_0, 'enter_tag'] = 'slope_up'
+        df.loc[df['enter_long'] & prediction_1, 'enter_tag'] = 'entry_anticipation'
+        df.loc[df['enter_long'] & regression_1, 'enter_tag'] = 'missed_inflection'
 
         # Resumen
         logger.info(
@@ -211,19 +213,24 @@ class FourierCycleInflection(IStrategy):
         # df['exit_long'] = 0
         # df['exit_tag'] = ''
 
-        # Con dactos actuales pendiente negativa
-        exit_prediction_0 = (df['cycle_slope'] < 0)
+        # Con dactos actuales pendiente negativa y que no se acabe de entrar en la vela anterior
+        exit_prediction_0 = (
+            (df['cycle_slope'] < 0) &
+            (~df['enter_long'].shift(1).fillna(False))
+        )
 
         # Anticipar la salida si la predicción a una muestra en la derivada prevé inflexión
-        exit_prediction_1 = (df['y0_proj'] < 0) & (df['y0_proj'].shift(
-            1) >= 0) & (df['y0_proj'].shift(2) > df['y0_proj'].shift(1))
+        exit_prediction_1 = (
+            (df['y0_proj'] < 0) &
+            (df['y0_proj'].shift(1) >= 0) &
+            (df['y0_proj'].shift(2) > df['y0_proj'].shift(1))
+        )
 
-        exit_condition = (exit_prediction_0 | exit_prediction_1) & (
-            ~df['enter_long'])
+        exit_condition = (exit_prediction_0 | exit_prediction_1) & (~df['enter_long'])
 
         df.loc[exit_condition, 'exit_long'] = 1
         df.loc[exit_prediction_0 & ~df['enter_long'], 'exit_tag'] = 'slope_down'
-        df.loc[exit_prediction_1 & ~df['enter_long'], 'exit_tag'] = 'inflection_anticipation'
+        df.loc[exit_prediction_1 & ~df['enter_long'], 'exit_tag'] = 'exit_anticipation'
 
         # logging
         logger.debug(
