@@ -202,7 +202,7 @@ class FourierCycleInflection(IStrategy):
         # Asignar etiqueta alineada con la señal adelantada
         df.loc[df['enter_long'] & prediction_0, 'enter_tag'] = 'slope_up'
         df.loc[df['enter_long'] & prediction_1, 'enter_tag'] = 'entry_anticipation'
-        df.loc[df['enter_long'] & regression_1, 'enter_tag'] = 'missed_inflection'
+        #df.loc[df['enter_long'] & regression_1, 'enter_tag'] = 'missed_inflection'
 
         # Resumen
         logger.info(
@@ -233,7 +233,7 @@ class FourierCycleInflection(IStrategy):
 
         df.loc[exit_condition, 'exit_long'] = True
         df.loc[exit_prediction_0 & ~df['enter_long'], 'exit_tag'] = 'slope_down'
-        df.loc[exit_prediction_1 & ~df['enter_long'], 'exit_tag'] = 'exit_anticipation'
+        #df.loc[exit_prediction_1 & ~df['enter_long'], 'exit_tag'] = 'exit_anticipation'
 
         # logging
         logger.debug(
