@@ -16,14 +16,14 @@ class FourierCycleInflection(IStrategy):
     timeframe = '5m'
 
     minimal_roi = {
-        "0": 0.05,
+        "0": 0.04,
         "30": 0.03,
         "60": 0.02,
         "120": 0.01,
         "180": 0
     }
 
-    stoploss = -0.01
+    stoploss = -0.005
     # use_custom_exit_trend = True  # Desactivar si no se usa custom_exit()
 
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
@@ -238,15 +238,16 @@ class FourierCycleInflection(IStrategy):
             (~df['enter_long'].shift(2).astype(bool))
         )
 
-        # logger.info(f"[EXIT THRESHOLD] {metadata['pair']} | Threshold: {df['slope_threshold']}")
+        # Muestra el último
+        logger.info(f"[EXIT THRESHOLD] {metadata['pair']} | Último threshold: {df['slope_threshold'].iloc[-1]:.5f}")
 
         # Booleans chain
-        exit_condition = (exit_prediction_0) & (~df['enter_long'])
+        exit_condition = (exit_prediction_0 | exit_prediction_2) & (~df['enter_long'])
 
         df.loc[exit_condition, 'exit_long'] = True
         df.loc[exit_prediction_0 & ~df['enter_long'], 'exit_tag'] = 'slope_down'
         # df.loc[exit_prediction_1 & ~df['enter_long'], 'exit_tag'] = 'exit_anticipation'
-        # df.loc[exit_prediction_2 & ~df['enter_long'], 'exit_tag'] = 'threshold_dynamic'
+        df.loc[exit_prediction_2 & ~df['enter_long'], 'exit_tag'] = 'threshold_dynamic'
 
         # logging
         logger.debug(
