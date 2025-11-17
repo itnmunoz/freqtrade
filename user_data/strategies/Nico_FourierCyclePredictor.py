@@ -238,11 +238,10 @@ class FourierCycleInflection(IStrategy):
             (~df['enter_long'].shift(2).astype(bool))
         )
 
-        logger.info(
-            f"[EXIT THRESHOLD] {metadata['pair']} | Threshold: {df['slope_threshold']}")
+        # logger.info(f"[EXIT THRESHOLD] {metadata['pair']} | Threshold: {df['slope_threshold']}")
 
         # Booleans chain
-        exit_condition = (exit_prediction_2) & (~df['enter_long'])
+        exit_condition = (exit_prediction_0) & (~df['enter_long'])
 
         df.loc[exit_condition, 'exit_long'] = True
         #df.loc[exit_prediction_0 & ~df['enter_long'], 'exit_tag'] = 'slope_down'
