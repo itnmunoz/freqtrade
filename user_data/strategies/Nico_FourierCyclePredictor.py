@@ -23,8 +23,8 @@ class FourierCycleInflection(IStrategy):
         "180": 0
     }
 
-    stoploss = -0.015
-    use_custom_exit_trend = True  # Evitar salir tarde
+    stoploss = -0.01
+    # use_custom_exit_trend = True  # Desactivar si no se usa custom_exit()
 
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
         fft = np.fft.fft(signal)
@@ -202,7 +202,7 @@ class FourierCycleInflection(IStrategy):
         # Asignar etiqueta alineada con la señal adelantada
         df.loc[df['enter_long'] & prediction_0, 'enter_tag'] = 'slope_up'
         df.loc[df['enter_long'] & prediction_1, 'enter_tag'] = 'entry_anticipation'
-        #df.loc[df['enter_long'] & regression_1, 'enter_tag'] = 'missed_inflection'
+        # df.loc[df['enter_long'] & regression_1, 'enter_tag'] = 'missed_inflection'
 
         # Resumen
         logger.info(
@@ -219,21 +219,35 @@ class FourierCycleInflection(IStrategy):
         exit_prediction_0 = (
             (df['cycle_slope'] < 0) &
             (df['cycle_slope'].shift(1) >= 0) &
-            (~df['enter_long'].shift(1).astype(bool))
+            (~df['enter_long'].shift(1).astype(bool)) &
+            (~df['enter_long'].shift(2).astype(bool))
         )
 
-        # Anticipar la salida si la predicción a una muestra en la derivada prevé inflexión
+        # Anticipar la salida si la predicción a una muestra en la derivada prevé inflexión TODO: solo si se va ganando
         exit_prediction_1 = (
             (df['y0_proj'] < 0) &
             (df['y0_proj'].shift(1) >= 0) &
             (df['y0_proj'].shift(2) > df['y0_proj'].shift(1))
         )
+        
+        df['slope_std'] = df['cycle_slope'].rolling(50).std() # Calcula la desviación estándar móvil de la pendiente
+        df['slope_threshold'] = -df['slope_std'] # Define el umbral dinámico como el negativo de esa desviación
+        exit_prediction_2 = (
+            (df['cycle_slope'] < df['slope_threshold']) &
+            (~df['enter_long'].shift(1).astype(bool)) &
+            (~df['enter_long'].shift(2).astype(bool))
+        )
 
-        exit_condition = (exit_prediction_0) & (~df['enter_long'])
+        logger.info(
+            f"[EXIT THRESHOLD] {metadata['pair']} | Threshold: {df['slope_threshold']}")
+
+        # Booleans chain
+        exit_condition = (exit_prediction_2) & (~df['enter_long'])
 
         df.loc[exit_condition, 'exit_long'] = True
-        df.loc[exit_prediction_0 & ~df['enter_long'], 'exit_tag'] = 'slope_down'
-        #df.loc[exit_prediction_1 & ~df['enter_long'], 'exit_tag'] = 'exit_anticipation'
+        #df.loc[exit_prediction_0 & ~df['enter_long'], 'exit_tag'] = 'slope_down'
+        # df.loc[exit_prediction_1 & ~df['enter_long'], 'exit_tag'] = 'exit_anticipation'
+        df.loc[exit_prediction_2 & ~df['enter_long'], 'exit_tag'] = 'threshold_dynamic'
 
         # logging
         logger.debug(
