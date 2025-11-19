@@ -149,7 +149,8 @@ class FourierCycleInflection(IStrategy):
             df['cycle_slope_mean'] = mean
 
             # Llamar a la función de anticipación
-            df = self.anticipate_inflection(df, slope_col='cycle_slope', lookback=3, horizon=(3, 4))
+            df = self.anticipate_inflection(
+                df, slope_col='cycle_slope', lookback=3, horizon=(3, 4))
             df['y0_proj_offset'] = df['y0_proj']*10 + mean
             df['y1_proj_offset'] = df['y1_proj']*10 + mean
 
@@ -167,14 +168,16 @@ class FourierCycleInflection(IStrategy):
         prediction_0 = (
             (df['cycle_slope'] > 0) &
             (df['cycle_slope'].shift(1) <= 0) &
-            (df['cycle_slope_trend'])
+            (df['cycle_slope'].shift(2) < df['cycle_slope'].shift(1)) &
+            (df['cycle_slope'].shift(3) < df['cycle_slope'].shift(2))
         )
 
-        # El predictor a una muestra futura hace inflexión y tendencia creciente en derivada 3 muestras seguidas
+        # El predictor a una muestra futura hace inflexión y tendencia creciente en derivada 4 muestras seguidas
         prediction_1 = (
             (df['y0_proj'] > 0) &
             (df['y0_proj'].shift(1) <= 0) &
-            (df['y0_proj'].shift(2) < df['y0_proj'].shift(1))
+            (df['cycle_slope'].shift(2) < df['cycle_slope'].shift(1)) &
+            (df['cycle_slope'].shift(3) < df['cycle_slope'].shift(2))
         )
 
         # Se nos pasa el punto de inflexion, paso por 0 y tendencia 3 velas crecientes
@@ -182,7 +185,8 @@ class FourierCycleInflection(IStrategy):
             (df['cycle_slope'] > df['cycle_slope'].shift(1)) &
             (df['cycle_slope'].shift(1) > df['cycle_slope'].shift(2)) &
             ((df['cycle_slope'].shift(2) > 0) | (df['cycle_slope'].shift(1) > 0) | (df['cycle_slope'] > 0)) &
-            ((df['cycle_slope'].shift(2) <= 0) | (df['cycle_slope'].shift(1) <= 0) | (df['cycle_slope'] <= 0))
+            ((df['cycle_slope'].shift(2) <= 0) |
+             (df['cycle_slope'].shift(1) <= 0) | (df['cycle_slope'] <= 0))
         )
 
         # Fuerte tendencia creciente hasta el máximo local
@@ -201,7 +205,8 @@ class FourierCycleInflection(IStrategy):
 
         # Asignar etiqueta alineada con la señal adelantada
         df.loc[df['enter_long'] & prediction_0, 'enter_tag'] = 'slope_up'
-        df.loc[df['enter_long'] & prediction_1, 'enter_tag'] = 'entry_anticipation'
+        df.loc[df['enter_long'] & prediction_1,
+               'enter_tag'] = 'entry_anticipation'
         # df.loc[df['enter_long'] & regression_1, 'enter_tag'] = 'missed_inflection'
 
         # Resumen
@@ -229,9 +234,11 @@ class FourierCycleInflection(IStrategy):
             (df['y0_proj'].shift(1) >= 0) &
             (df['y0_proj'].shift(2) > df['y0_proj'].shift(1))
         )
-        
-        df['slope_std'] = df['cycle_slope'].rolling(50).std() # Calcula la desviación estándar móvil de la pendiente
-        df['slope_threshold'] = -df['slope_std'] # Define el umbral dinámico como el negativo de esa desviación
+
+        # Calcula la desviación estándar móvil de la pendiente
+        df['slope_std'] = df['cycle_slope'].rolling(50).std()
+        # Define el umbral dinámico como el negativo de esa desviación
+        df['slope_threshold'] = -df['slope_std']
         exit_prediction_2 = (
             (df['cycle_slope'] < df['slope_threshold']) &
             (~df['enter_long'].shift(1).astype(bool)) &
@@ -239,15 +246,18 @@ class FourierCycleInflection(IStrategy):
         )
 
         # Muestra el último
-        logger.info(f"[EXIT THRESHOLD] {metadata['pair']} | Último threshold: {df['slope_threshold'].iloc[-1]:.5f}")
+        logger.info(
+            f"[EXIT THRESHOLD] {metadata['pair']} | Último threshold: {df['slope_threshold'].iloc[-1]:.5f} | Derivada actual: {df['cycle_slope'].iloc[-1]:.5f}")
 
         # Booleans chain
-        exit_condition = (exit_prediction_0 | exit_prediction_2) & (~df['enter_long'])
+        exit_condition = (exit_prediction_0 | exit_prediction_2) & (
+            ~df['enter_long'])
 
         df.loc[exit_condition, 'exit_long'] = True
         df.loc[exit_prediction_0 & ~df['enter_long'], 'exit_tag'] = 'slope_down'
         # df.loc[exit_prediction_1 & ~df['enter_long'], 'exit_tag'] = 'exit_anticipation'
-        df.loc[exit_prediction_2 & ~df['enter_long'], 'exit_tag'] = 'threshold_dynamic'
+        df.loc[exit_prediction_2 & ~df['enter_long'],
+               'exit_tag'] = 'threshold_dynamic'
 
         # logging
         logger.debug(
