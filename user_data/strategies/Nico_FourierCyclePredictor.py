@@ -174,10 +174,10 @@ class FourierCycleInflection(IStrategy):
 
         # El predictor a una muestra futura hace inflexión y tendencia creciente en derivada 4 muestras seguidas
         prediction_1 = (
-            (df['y0_proj'] > 0) &
-            (df['y0_proj'].shift(1) <= 0) &
-            (df['cycle_slope'].shift(2) < df['cycle_slope'].shift(1)) &
-            (df['cycle_slope'].shift(3) < df['cycle_slope'].shift(2))
+            (df['y1_proj'] > 0) &
+            (df['y1_proj'].shift(1) <= 0) &
+            (df['y1_proj'].shift(2) < df['y1_proj'].shift(1)) &
+            (df['y1_proj'].shift(3) < df['y1_proj'].shift(2))
         )
 
         # Se nos pasa el punto de inflexion, paso por 0 y tendencia 3 velas crecientes
@@ -199,15 +199,14 @@ class FourierCycleInflection(IStrategy):
         )
 
         # BIT OR
-        df['inflection'] = prediction_0 | prediction_1
+        inflection = prediction_0 | prediction_1
 
-        df['enter_long'] = df['inflection'].astype(bool)
+        df['enter_long'] = inflection.astype(bool)
 
         # Asignar etiqueta alineada con la señal adelantada
-        df.loc[df['enter_long'] & prediction_0, 'enter_tag'] = 'slope_up'
-        df.loc[df['enter_long'] & prediction_1,
-               'enter_tag'] = 'entry_anticipation'
-        # df.loc[df['enter_long'] & regression_1, 'enter_tag'] = 'missed_inflection'
+        df.loc[inflection & prediction_0, 'enter_tag'] = 'slope_up'
+        df.loc[inflection & prediction_1, 'enter_tag'] = 'entry_anticipation'
+        # df.loc[inflection & regression_1, 'enter_tag'] = 'missed_inflection'
 
         # Resumen
         logger.info(
@@ -250,6 +249,12 @@ class FourierCycleInflection(IStrategy):
             ~df['enter_long'].shift(2).astype(bool)
             )
 
+        df.loc[exit_condition, 'exit_long'] = True
+        df.loc[exit_prediction_0 & exit_condition, 'exit_tag'] = 'slope_down'
+        # df.loc[exit_prediction_1 & exit_condition, 'exit_tag'] = 'exit_anticipation'
+        df.loc[exit_prediction_2 & exit_condition, 'exit_tag'] = 'threshold_dynamic'
+
+        '''
         last_idx = df.index[-1]
 
         if exit_prediction_0.iloc[-1] and exit_condition.iloc[-1]:
@@ -263,14 +268,8 @@ class FourierCycleInflection(IStrategy):
         elif exit_prediction_2.iloc[-1] and exit_condition.iloc[-1]:
             df.loc[last_idx, 'exit_long'] = True
             df.loc[last_idx, 'exit_tag'] = 'threshold_dynamic'
+        '''
 
-        '''
-        df.loc[exit_condition, 'exit_long'] = True
-        df.loc[exit_prediction_0 & ~df['enter_long'], 'exit_tag'] = 'slope_down'
-        # df.loc[exit_prediction_1 & ~df['enter_long'], 'exit_tag'] = 'exit_anticipation'
-        df.loc[exit_prediction_2 & ~df['enter_long'],'exit_tag'] = 'threshold_dynamic'
-        '''
-        
         # logging
         logger.debug(
             f"[exit] {metadata['pair']} | Señal activa: {df['exit_long'].iloc[-1]}")
