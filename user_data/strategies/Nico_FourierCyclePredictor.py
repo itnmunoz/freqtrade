@@ -252,15 +252,15 @@ class FourierCycleInflection(IStrategy):
 
         last_idx = df.index[-1]
 
-        if exit_prediction_0.iloc[-1] and exit_condition[-1]:
+        if exit_prediction_0.iloc[-1] and exit_condition.iloc[-1]:
             df.loc[last_idx, 'exit_long'] = True
             df.loc[last_idx, 'exit_tag'] = 'slope_down'
 
-        # elif exit_prediction_1.iloc[-1] and exit_condition[-1]:
+        # elif exit_prediction_1.iloc[-1] and exit_condition.iloc[-1]:
         #    df.loc[last_idx, 'exit_long'] = True
         #    df.loc[last_idx, 'exit_tag'] = 'exit_anticipation'
 
-        elif exit_prediction_2.iloc[-1] and exit_condition[-1]:
+        elif exit_prediction_2.iloc[-1] and exit_condition.iloc[-1]:
             df.loc[last_idx, 'exit_long'] = True
             df.loc[last_idx, 'exit_tag'] = 'threshold_dynamic'
 
