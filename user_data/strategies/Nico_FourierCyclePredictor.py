@@ -217,8 +217,10 @@ class FourierCycleInflection(IStrategy):
 
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         # Inicializar columnas si no existen
-        # df['exit_long'] = 0
-        # df['exit_tag'] = ''
+        if 'exit_long' not in df.columns:
+            df['exit_long'] = False
+        if 'exit_tag' not in df.columns:
+            df['exit_tag'] = ''
 
         # Con dactos actuales pendiente negativa y que no se acabe de entrar en la vela anterior
         exit_prediction_0 = (df['cycle_slope'] < 0) & (df['cycle_slope'].shift(1) >= 0)
