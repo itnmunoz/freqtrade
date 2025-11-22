@@ -221,12 +221,7 @@ class FourierCycleInflection(IStrategy):
         # df['exit_tag'] = ''
 
         # Con dactos actuales pendiente negativa y que no se acabe de entrar en la vela anterior
-        exit_prediction_0 = (
-            (df['cycle_slope'] < 0) &
-            (df['cycle_slope'].shift(1) >= 0) &
-            (~df['enter_long'].shift(1).astype(bool)) &
-            (~df['enter_long'].shift(2).astype(bool))
-        )
+        exit_prediction_0 = (df['cycle_slope'] < 0) & (df['cycle_slope'].shift(1) >= 0)
 
         # Anticipar la salida si la predicción a una muestra en la derivada prevé inflexión TODO: solo si se va ganando
         exit_prediction_1 = (
@@ -239,26 +234,41 @@ class FourierCycleInflection(IStrategy):
         df['slope_std'] = df['cycle_slope'].rolling(50).std()
         # Define el umbral dinámico como el negativo de esa desviación
         df['slope_threshold'] = -df['slope_std']
-        exit_prediction_2 = (
-            (df['cycle_slope'] < df['slope_threshold']) &
-            (~df['enter_long'].shift(1).astype(bool)) &
-            (~df['enter_long'].shift(2).astype(bool))
-        )
+        exit_prediction_2 = (df['cycle_slope'] < df['slope_threshold'])
 
         # Muestra el último
         logger.info(
             f"[EXIT THRESHOLD] {metadata['pair']} | Último threshold: {df['slope_threshold'].iloc[-1]:.5f} | Derivada actual: {df['cycle_slope'].iloc[-1]:.5f}")
 
-        # Booleans chain
-        exit_condition = (exit_prediction_0 | exit_prediction_2) & (
-            ~df['enter_long'])
+        # Booleans chain y margen 3 velas para evitar salida recién entrado
+        exit_condition = (
+            (exit_prediction_0 | exit_prediction_2) &
+            ~df['enter_long'] &
+            ~df['enter_long'].shift(1).astype(bool) &
+            ~df['enter_long'].shift(2).astype(bool)
+            )
 
+        last_idx = df.index[-1]
+
+        if exit_prediction_0.iloc[-1] and exit_condition[-1]:
+            df.loc[last_idx, 'exit_long'] = True
+            df.loc[last_idx, 'exit_tag'] = 'slope_down'
+
+        # elif exit_prediction_1.iloc[-1] and exit_condition[-1]:
+        #    df.loc[last_idx, 'exit_long'] = True
+        #    df.loc[last_idx, 'exit_tag'] = 'exit_anticipation'
+
+        elif exit_prediction_2.iloc[-1] and exit_condition[-1]:
+            df.loc[last_idx, 'exit_long'] = True
+            df.loc[last_idx, 'exit_tag'] = 'threshold_dynamic'
+
+        '''
         df.loc[exit_condition, 'exit_long'] = True
         df.loc[exit_prediction_0 & ~df['enter_long'], 'exit_tag'] = 'slope_down'
         # df.loc[exit_prediction_1 & ~df['enter_long'], 'exit_tag'] = 'exit_anticipation'
-        df.loc[exit_prediction_2 & ~df['enter_long'],
-               'exit_tag'] = 'threshold_dynamic'
-
+        df.loc[exit_prediction_2 & ~df['enter_long'],'exit_tag'] = 'threshold_dynamic'
+        '''
+        
         # logging
         logger.debug(
             f"[exit] {metadata['pair']} | Señal activa: {df['exit_long'].iloc[-1]}")
