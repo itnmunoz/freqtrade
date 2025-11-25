@@ -108,40 +108,27 @@ class FourierCycleInflection(IStrategy):
         df['fourier_pred'] = np.nan
         df['reconstructed'] = np.nan
 
-        if len(df) >= 256:
-            signal = df['cycle'].values[-256:]
-            mean = np.mean(signal)
+        # if len(df) >= 256:
+        signal = df['cycle'].values[-256:]
+        mean = np.mean(signal)
 
-            '''
-            reconstructed, pred = self.fourier_predict(signal)
-            df.loc[df.index[-256:], 'reconstructed'] = reconstructed
+        # Calcular pendiente sobre la señal original suavizada
+        slope = np.gradient(df['cycle'].values[-256:])
+        # smoothed_slope = self.lowpass_filter(slope, kernel_size=7, window='hamming')
+        df.loc[df.index[-256:], 'cycle_slope'] = slope  # smoothed_slope
 
-            # Detectar mínimos locales en la señal reconstruida
-            min_idx = argrelextrema(reconstructed, np.less_equal, order=5)[0]
-            df.loc[df.index[-256:], 'cycle_min'] = np.nan
-            df.loc[df.index[-256:][min_idx],'cycle_min'] = reconstructed[min_idx]
+        # Superponer en la gráica en la misma ordenada
+        df['cycle_slope_offset'] = df['cycle_slope']*10 + mean
+        df['cycle_slope_mean'] = mean
 
-            # Guardar predicción
-            df.loc[df.index[-1], 'fourier_pred'] = pred
-            '''
+        # Llamar a la función de anticipación
+        df = self.anticipate_inflection(
+            df, slope_col='cycle_slope', lookback=3, horizon=(3, 4))
+        df['y0_proj_offset'] = df['y0_proj']*10 + mean
+        df['y1_proj_offset'] = df['y1_proj']*10 + mean
 
-            # Calcular pendiente sobre la señal original suavizada
-            slope = np.gradient(df['cycle'].values[-256:])
-            # smoothed_slope = self.lowpass_filter(slope, kernel_size=7, window='hamming')
-            df.loc[df.index[-256:], 'cycle_slope'] = slope  # smoothed_slope
-
-            # Superponer en la gráica en la misma ordenada
-            df['cycle_slope_offset'] = df['cycle_slope']*10 + mean
-            df['cycle_slope_mean'] = mean
-
-            # Llamar a la función de anticipación
-            df = self.anticipate_inflection(
-                df, slope_col='cycle_slope', lookback=3, horizon=(3, 4))
-            df['y0_proj_offset'] = df['y0_proj']*10 + mean
-            df['y1_proj_offset'] = df['y1_proj']*10 + mean
-
-            # Demasiadas oscilaciones
-            df = self.detect_cycle_frequency(df, slope_col='cycle_slope', window=10, max_turns=2)
+        # Demasiadas oscilaciones
+        df = self.detect_cycle_frequency(df, slope_col='cycle_slope', window=10, max_turns=2)
 
         return df
 
