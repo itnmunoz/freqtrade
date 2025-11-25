@@ -24,7 +24,7 @@ class FourierCycleInflection(IStrategy):
     }
 
     stoploss = -0.005
-    # use_custom_exit_trend = True  # Desactivar si no se usa custom_exit()
+    use_custom_exit_trend = True  # Activado por utilizar custom_exit()
 
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
         fft = np.fft.fft(signal)
@@ -98,20 +98,6 @@ class FourierCycleInflection(IStrategy):
 
         return df
 
-    @staticmethod
-    def detect_slope_trend(df, slope_col='cycle_slope'):
-        """
-        Detecta si las últimas 3 velas muestran una pendiente creciente en cycle_slope.
-        Marca True en 'cycle_slope_trend' si se cumple la condición.
-        """
-        df['cycle_slope_trend'] = (
-            (df[slope_col].shift(3) < df[slope_col].shift(2)) &
-            (df[slope_col].shift(2) < df[slope_col].shift(1)) &
-            (df[slope_col].shift(1) < df[slope_col])
-        )
-
-        return df
-
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
 
         # df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
@@ -154,8 +140,8 @@ class FourierCycleInflection(IStrategy):
             df['y0_proj_offset'] = df['y0_proj']*10 + mean
             df['y1_proj_offset'] = df['y1_proj']*10 + mean
 
-            # Tendencia 4 velas -> Hacer en populate_entry_trend
-            df = self.detect_slope_trend(df, slope_col='cycle_slope')
+            # Demasiadas oscilaciones
+            df = self.detect_cycle_frequency(df, slope_col='cycle_slope', window=10, max_turns=2)
 
         return df
 
@@ -175,9 +161,9 @@ class FourierCycleInflection(IStrategy):
         # El predictor a una muestra futura hace inflexión y tendencia creciente en derivada 4 muestras seguidas
         prediction_1 = (
             (df['y1_proj'] > 0) &
-            (df['y1_proj'].shift(1) <= 0) &
-            (df['y1_proj'].shift(2) < df['y1_proj'].shift(1)) &
-            (df['y1_proj'].shift(3) < df['y1_proj'].shift(2))
+            (df['cycle_slope'].shift(1) <= 0) &
+            (df['cycle_slope'].shift(2) < df['cycle_slope'].shift(1)) &
+            (df['cycle_slope'].shift(3) < df['cycle_slope'].shift(2))
         )
 
         # Se nos pasa el punto de inflexion, paso por 0 y tendencia 3 velas crecientes
@@ -199,7 +185,7 @@ class FourierCycleInflection(IStrategy):
         )
 
         # BIT OR
-        inflection = prediction_0 | prediction_1
+        inflection = (prediction_0 | prediction_1) & df['valid_cycle']
 
         df['enter_long'] = inflection.astype(bool)
 
@@ -214,6 +200,7 @@ class FourierCycleInflection(IStrategy):
 
         return df
 
+    '''
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         # Inicializar columnas si no existen
         if 'exit_long' not in df.columns:
@@ -254,41 +241,80 @@ class FourierCycleInflection(IStrategy):
         # df.loc[exit_prediction_1 & exit_condition, 'exit_tag'] = 'exit_anticipation'
         df.loc[exit_prediction_2 & exit_condition, 'exit_tag'] = 'threshold_dynamic'
 
-        '''
-        last_idx = df.index[-1]
-
-        if exit_prediction_0.iloc[-1] and exit_condition.iloc[-1]:
-            df.loc[last_idx, 'exit_long'] = True
-            df.loc[last_idx, 'exit_tag'] = 'slope_down'
-
-        # elif exit_prediction_1.iloc[-1] and exit_condition.iloc[-1]:
-        #    df.loc[last_idx, 'exit_long'] = True
-        #    df.loc[last_idx, 'exit_tag'] = 'exit_anticipation'
-
-        elif exit_prediction_2.iloc[-1] and exit_condition.iloc[-1]:
-            df.loc[last_idx, 'exit_long'] = True
-            df.loc[last_idx, 'exit_tag'] = 'threshold_dynamic'
-        '''
-
         # logging
         logger.debug(
             f"[exit] {metadata['pair']} | Señal activa: {df['exit_long'].iloc[-1]}")
 
         return df
-
     '''
-    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                    current_profit: float, **kwargs) -> Optional[Tuple[str, str]]:
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-        last_candle = dataframe.iloc[-1]
 
-        # Verifica si hay señal de salida
-        if last_candle.get('exit_long', 0) == 1:
-            exit_tag = last_candle.get('exit_tag', 'custom_exit')
-            return "sell", exit_tag
+    # =========================
+    # Helpers de condiciones
+    # =========================
+    def slope_down_condition(self, pair: str, current_time: datetime) -> bool:
+        df = self.dp.get_pair_dataframe(pair, timeframe=self.timeframe)
+        cond = (df['cycle_slope'].iloc[-1] < 0) and (df['cycle_slope'].iloc[-2] >= 0)
+        # margen de 3 velas para evitar salida recién entrado
+        recent_enter = (
+            df['enter_long'].iloc[-1]
+            or df['enter_long'].iloc[-2]
+            or df['enter_long'].iloc[-3]
+        )
+        return cond and not recent_enter
+
+    def exit_anticipation_condition(self, pair: str, current_time: datetime) -> bool:
+        df = self.dp.get_pair_dataframe(pair, timeframe=self.timeframe)
+        cond = (
+            (df['y0_proj'].iloc[-1] < 0)
+            and (df['y0_proj'].iloc[-2] >= 0)
+            and (df['y0_proj'].iloc[-3] > df['y0_proj'].iloc[-2])
+        )
+        recent_enter = (
+            df['enter_long'].iloc[-1]
+            or df['enter_long'].iloc[-2]
+            or df['enter_long'].iloc[-3]
+        )
+        return cond and not recent_enter
+
+    def threshold_dynamic_condition(self, pair: str, current_time: datetime) -> bool:
+        df = self.dp.get_pair_dataframe(pair, timeframe=self.timeframe)
+        df['slope_std'] = df['cycle_slope'].rolling(50).std()
+        df['slope_threshold'] = -df['slope_std']
+        cond = df['cycle_slope'].iloc[-1] < df['slope_threshold'].iloc[-1]
+        recent_enter = (
+            df['enter_long'].iloc[-1]
+            or df['enter_long'].iloc[-2]
+            or df['enter_long'].iloc[-3]
+        )
+        return cond and not recent_enter
+
+    # =========================
+    # Custom Exit
+    # =========================
+    def custom_exit(self, pair: str, trade: Trade, current_rate: float,
+                    current_time: datetime, **kwargs) -> Optional[str]:
+
+        profit = trade.calc_profit_ratio(current_rate)
+
+        # slope_down → solo si hay beneficio
+        if self.slope_down_condition(pair, current_time):
+            if profit > self.fee:
+                return "slope_down"
+
+        # anticipación → opcional, también solo si hay beneficio
+        if self.exit_anticipation_condition(pair, current_time):
+            if profit > self.fee:
+                return "exit_anticipation"
+
+        # threshold_dynamic → siempre válido
+        if self.threshold_dynamic_condition(pair, current_time):
+            return "threshold_dynamic"
+
+        # stop_loss defensivo
+        if profit < self.stoploss:
+            return "stop_loss"
 
         return None
-    '''
 
     @staticmethod
     def lowpass_filter(signal: np.ndarray, kernel_size: int = 5, window: str = 'hamming') -> np.ndarray:
@@ -316,25 +342,6 @@ class FourierCycleInflection(IStrategy):
         kernel /= kernel.sum()
         smoothed = np.convolve(signal, kernel, mode='same')
         return smoothed
-
-    '''
-    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                current_profit: float, **kwargs) -> Optional[str]:
-        df = self.dp.get_pair_dataframe(pair, self.timeframe)
-
-        # Asegura que el DataFrame no esté vacío y tenga la columna
-        if df.empty or 'cycle_slope' not in df.columns:
-            return None
-
-        # Evalúa la pendiente en la vela actual
-        last_slope = df['cycle_slope'].iloc[-1]
-
-        # Salida si la pendiente es negativa
-        if last_slope < 0:
-            return 'slope_down'
-
-        return None
-    '''
 
     '''
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
