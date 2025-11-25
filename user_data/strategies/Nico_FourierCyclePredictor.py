@@ -148,7 +148,7 @@ class FourierCycleInflection(IStrategy):
         # El predictor a una muestra futura hace inflexión y tendencia creciente en derivada 4 muestras seguidas
         prediction_1 = (
             (df['y1_proj'] > 0) &
-            (df['cycle_slope'].shift(1) <= 0) &
+            (df['y1_proj'].shift(1) <= 0) &
             (df['cycle_slope'].shift(2) < df['cycle_slope'].shift(1)) &
             (df['cycle_slope'].shift(3) < df['cycle_slope'].shift(2))
         )
