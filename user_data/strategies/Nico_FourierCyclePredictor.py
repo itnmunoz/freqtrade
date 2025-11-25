@@ -24,7 +24,7 @@ class FourierCycleInflection(IStrategy):
     }
 
     stoploss = -0.005
-    use_custom_exit_trend = True  # Activado por utilizar custom_exit()
+    # use_custom_exit_trend = True  # Activado por utilizar custom_exit()
 
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
         fft = np.fft.fft(signal)
@@ -186,7 +186,6 @@ class FourierCycleInflection(IStrategy):
 
         return df
 
-    '''
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         # Inicializar columnas si no existen
         if 'exit_long' not in df.columns:
@@ -232,7 +231,6 @@ class FourierCycleInflection(IStrategy):
             f"[exit] {metadata['pair']} | Señal activa: {df['exit_long'].iloc[-1]}")
 
         return df
-    '''
 
     def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         # Método requerido por Freqtrade, aunque usemos custom_exit
@@ -290,6 +288,7 @@ class FourierCycleInflection(IStrategy):
     # =========================
     # Custom Exit
     # =========================
+    '''
     def custom_exit(self, pair: str, trade: Trade, current_rate: float,
                     current_time: datetime, **kwargs) -> Optional[str]:
 
@@ -314,7 +313,8 @@ class FourierCycleInflection(IStrategy):
             return "stop_loss"
 
         return None
-
+    '''
+        
     @staticmethod
     def lowpass_filter(signal: np.ndarray, kernel_size: int = 5, window: str = 'hamming') -> np.ndarray:
         """
