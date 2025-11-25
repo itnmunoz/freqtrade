@@ -248,6 +248,12 @@ class FourierCycleInflection(IStrategy):
         return df
     '''
 
+    def populate_exit_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
+        # Método requerido por Freqtrade, aunque usemos custom_exit
+        df['exit_long'] = False
+        df['exit_tag'] = ''
+        return df
+
     # =========================
     # Helpers de condiciones
     # =========================
