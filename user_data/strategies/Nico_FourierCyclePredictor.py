@@ -153,13 +153,12 @@ class FourierCycleInflection(IStrategy):
             (df['cycle_slope'].shift(3) < df['cycle_slope'].shift(2))
         )
 
-        # Se nos pasa el punto de inflexion, paso por 0 y tendencia 3 velas crecientes
+        # Se nos pasa el punto de inflexion, paso por 0 y tendencia 4 velas crecientes
         regression_1 = (
             (df['cycle_slope'] > df['cycle_slope'].shift(1)) &
-            (df['cycle_slope'].shift(1) > df['cycle_slope'].shift(2)) &
-            ((df['cycle_slope'].shift(2) > 0) | (df['cycle_slope'].shift(1) > 0) | (df['cycle_slope'] > 0)) &
-            ((df['cycle_slope'].shift(2) <= 0) |
-             (df['cycle_slope'].shift(1) <= 0) | (df['cycle_slope'] <= 0))
+            (df['cycle_slope'].shift(1) > 0) &
+            (df['cycle_slope'].shift(2) <= 0) &
+            (df['cycle_slope'].shift(3) < df['cycle_slope'].shift(2))
         )
 
         # Fuerte tendencia creciente hasta el máximo local
@@ -172,14 +171,14 @@ class FourierCycleInflection(IStrategy):
         )
 
         # BIT OR
-        inflection = (prediction_0 | prediction_1) & df['valid_cycle']
+        inflection = (prediction_0 | prediction_1 | regression_1)
 
         df['enter_long'] = inflection.astype(bool)
 
         # Asignar etiqueta alineada con la señal adelantada
         df.loc[inflection & prediction_0, 'enter_tag'] = 'slope_up'
         df.loc[inflection & prediction_1, 'enter_tag'] = 'entry_anticipation'
-        # df.loc[inflection & regression_1, 'enter_tag'] = 'missed_inflection'
+        df.loc[inflection & regression_1, 'enter_tag'] = 'regression_up'
 
         # Resumen
         logger.info(
