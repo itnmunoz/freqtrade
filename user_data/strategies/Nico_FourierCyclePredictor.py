@@ -297,7 +297,7 @@ class FourierCycleInflection(IStrategy):
 
         # slope_down → solo si hay beneficio
         if self.slope_down_condition(pair, current_time):
-            if profit > self.fee:
+            if profit > 0:
                 return "slope_down"
 
         # anticipación → opcional, también solo si hay beneficio
