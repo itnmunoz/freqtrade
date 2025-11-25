@@ -302,9 +302,9 @@ class FourierCycleInflection(IStrategy):
                 return "slope_down"
 
         # anticipación → opcional, también solo si hay beneficio
-        if self.exit_anticipation_condition(pair, current_time):
-            if profit > self.fee:
-                return "exit_anticipation"
+        # if self.exit_anticipation_condition(pair, current_time):
+        #     if profit > self.fee:
+        #         return "exit_anticipation"
 
         # threshold_dynamic → siempre válido
         if self.threshold_dynamic_condition(pair, current_time):
