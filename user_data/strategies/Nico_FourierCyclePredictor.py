@@ -246,6 +246,8 @@ class FourierCycleInflection(IStrategy):
     # =========================
     def slope_down_condition(self, pair: str, current_time: datetime) -> bool:
         df = self.dp.get_pair_dataframe(pair, timeframe=self.timeframe)
+        if 'cycle_slope' not in df.columns:
+            return False
         cond = (df['cycle_slope'].iloc[-1] < 0) and (df['cycle_slope'].iloc[-2] >= 0)
         # margen de 3 velas para evitar salida recién entrado
         recent_enter = (
@@ -257,6 +259,8 @@ class FourierCycleInflection(IStrategy):
 
     def exit_anticipation_condition(self, pair: str, current_time: datetime) -> bool:
         df = self.dp.get_pair_dataframe(pair, timeframe=self.timeframe)
+        if 'cycle_slope' not in df.columns:
+            return False
         cond = (
             (df['y0_proj'].iloc[-1] < 0)
             and (df['y0_proj'].iloc[-2] >= 0)
@@ -271,6 +275,9 @@ class FourierCycleInflection(IStrategy):
 
     def threshold_dynamic_condition(self, pair: str, current_time: datetime) -> bool:
         df = self.dp.get_pair_dataframe(pair, timeframe=self.timeframe)
+        if 'cycle_slope' not in df.columns:
+            return False
+
         df['slope_std'] = df['cycle_slope'].rolling(50).std()
         df['slope_threshold'] = -df['slope_std']
         cond = df['cycle_slope'].iloc[-1] < df['slope_threshold'].iloc[-1]
