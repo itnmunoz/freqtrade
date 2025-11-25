@@ -128,7 +128,7 @@ class FourierCycleInflection(IStrategy):
         df['y1_proj_offset'] = df['y1_proj']*10 + mean
 
         # Demasiadas oscilaciones
-        df = self.detect_cycle_frequency(df, slope_col='cycle_slope', window=10, max_turns=2)
+        df = self.detect_cycle_frequency(df, slope_col='cycle_slope', window=10, max_turns=3)
 
         return df
 
