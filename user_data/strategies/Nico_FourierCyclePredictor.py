@@ -16,13 +16,13 @@ class FourierCycleInflection(IStrategy):
     timeframe = '5m'
 
     minimal_roi = {
-        "0": 0.02,
-        "30": 0.015,
+        "0": 0.03,
+        "30": 0.02,
         "60": 0.01,
         "120": 0
     }
 
-    stoploss = -0.0075
+    stoploss = -0.005
     use_custom_exit_trend = False  # Activado por utilizar custom_exit()
 
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
@@ -139,7 +139,8 @@ class FourierCycleInflection(IStrategy):
 
         # Calcular pendiente de manera continua (rolling slope)
         # Diferencia entre velas consecutivas, suavizada con ventana de 7
-        df['cycle_slope'] = df['cycle'].diff().rolling(window=7).mean()
+        # df['cycle_slope'] = df['cycle'].diff().rolling(window=7).mean()
+        df['cycle_slope'] = np.gradient(df['cycle'].values)
 
         # Media del ciclo para referencia
         df['cycle_mean'] = np.mean(df['cycle'])  # df['cycle'].rolling(window=50).mean()
@@ -200,13 +201,13 @@ class FourierCycleInflection(IStrategy):
         )
 
         # BIT OR
-        inflection = (prediction_0 | prediction_1 | regression_1)
+        inflection = (prediction_0 | regression_1)
 
         df['enter_long'] = inflection.astype(bool)
 
         # Asignar etiqueta alineada con la señal adelantada
         df.loc[inflection & prediction_0, 'enter_tag'] = 'slope_up'
-        df.loc[inflection & prediction_1, 'enter_tag'] = 'entry_anticipation'
+        # df.loc[inflection & prediction_1, 'enter_tag'] = 'entry_anticipation'
         df.loc[inflection & regression_1, 'enter_tag'] = 'regression_up'
 
         # Resumen
@@ -311,7 +312,7 @@ class FourierCycleInflection(IStrategy):
     # =========================
     # Custom Exit
     # =========================
-
+    '''
     def custom_exit(self, pair: str, trade: Trade, current_rate: float,
                     current_time: datetime, **kwargs) -> Optional[str]:
 
@@ -336,6 +337,7 @@ class FourierCycleInflection(IStrategy):
             return "stop_loss"
 
         return None
+    '''
 
     @staticmethod
     def lowpass_filter(signal: np.ndarray, kernel_size: int = 5, window: str = 'hamming') -> np.ndarray:
