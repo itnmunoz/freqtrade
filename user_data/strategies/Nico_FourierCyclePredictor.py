@@ -98,6 +98,7 @@ class FourierCycleInflection(IStrategy):
 
         return df
 
+    '''
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
 
         # df['cycle'] = savgol_filter(df['close'], window_length=21, polyorder=3)
@@ -129,6 +130,35 @@ class FourierCycleInflection(IStrategy):
 
         # Demasiadas oscilaciones
         df = self.detect_cycle_frequency(df, slope_col='cycle_slope', window=10, max_turns=4)
+
+        return df
+    '''
+
+    def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
+        # Ciclo base: EMA corta
+        df['cycle'] = ta.EMA(df['close'], timeperiod=7)
+
+        # Calcular pendiente de manera continua (rolling slope)
+        # Diferencia entre velas consecutivas, suavizada con ventana de 7
+        df['cycle_slope'] = df['cycle'].diff().rolling(window=7).mean()
+
+        # Media del ciclo para referencia
+        df['cycle_mean'] = np.mean(df['cycle'])  # df['cycle'].rolling(window=50).mean()
+
+        # Offset para graficar pendiente en la misma escala
+        df['cycle_slope_offset'] = df['cycle_slope'] * 10 + df['cycle_mean']
+
+        # Proyecciones de inflexión (adaptadas a slope continuo)
+        df = self.anticipate_inflection(
+            df, slope_col='cycle_slope', lookback=3, horizon=(3, 4)
+        )
+        df['y0_proj_offset'] = df['y0_proj'] * 10 + df['cycle_mean']
+        df['y1_proj_offset'] = df['y1_proj'] * 10 + df['cycle_mean']
+
+        # Detección de oscilaciones con ventana corta
+        df = self.detect_cycle_frequency(
+            df, slope_col='cycle_slope', window=10, max_turns=4
+        )
 
         return df
 
