@@ -23,8 +23,8 @@ class FourierCycleInflection(IStrategy):
         "180": 0
     }
 
-    stoploss = -0.005
-    # use_custom_exit_trend = True  # Activado por utilizar custom_exit()
+    stoploss = -0.0075
+    use_custom_exit_trend = True  # Activado por utilizar custom_exit()
 
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
         fft = np.fft.fft(signal)
@@ -282,7 +282,7 @@ class FourierCycleInflection(IStrategy):
     # =========================
     # Custom Exit
     # =========================
-    '''
+
     def custom_exit(self, pair: str, trade: Trade, current_rate: float,
                     current_time: datetime, **kwargs) -> Optional[str]:
 
@@ -290,8 +290,8 @@ class FourierCycleInflection(IStrategy):
 
         # slope_down → solo si hay beneficio
         if self.slope_down_condition(pair, current_time):
-            # if profit > 0:
-            return "slope_down"
+            if profit > self.fee*10:
+                return "slope_down"
 
         # anticipación → opcional, también solo si hay beneficio
         # if self.exit_anticipation_condition(pair, current_time):
@@ -307,8 +307,7 @@ class FourierCycleInflection(IStrategy):
             return "stop_loss"
 
         return None
-    '''
-        
+
     @staticmethod
     def lowpass_filter(signal: np.ndarray, kernel_size: int = 5, window: str = 'hamming') -> np.ndarray:
         """
