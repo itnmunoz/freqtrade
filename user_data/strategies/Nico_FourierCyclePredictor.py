@@ -16,15 +16,14 @@ class FourierCycleInflection(IStrategy):
     timeframe = '5m'
 
     minimal_roi = {
-        "0": 0.04,
-        "30": 0.03,
-        "60": 0.02,
-        "120": 0.01,
-        "180": 0
+        "0": 0.02,
+        "30": 0.015,
+        "60": 0.01,
+        "120": 0
     }
 
     stoploss = -0.0075
-    use_custom_exit_trend = True  # Activado por utilizar custom_exit()
+    use_custom_exit_trend = False  # Activado por utilizar custom_exit()
 
     def fourier_predict(self, signal: np.ndarray, n_freqs: int = 5):
         fft = np.fft.fft(signal)
@@ -177,10 +176,10 @@ class FourierCycleInflection(IStrategy):
 
         # El predictor a una muestra futura hace inflexión y tendencia creciente en derivada 4 muestras seguidas
         prediction_1 = (
-            (df['y1_proj'] > 0) &
-            (df['y1_proj'].shift(1) <= 0) &
-            (df['cycle_slope'].shift(2) < df['cycle_slope'].shift(1)) &
-            (df['cycle_slope'].shift(3) < df['cycle_slope'].shift(2))
+            (df['y0_proj'] > 0) &
+            (df['y0_proj'].shift(1) <= 0) &
+            (df['y0_proj'].shift(2) < df['y0_proj'].shift(1)) &
+            (df['y0_proj'].shift(3) < df['y0_proj'].shift(2))
         )
 
         # Se nos pasa el punto de inflexion, paso por 0 y tendencia 4 velas crecientes
@@ -236,7 +235,7 @@ class FourierCycleInflection(IStrategy):
         # Calcula la desviación estándar móvil de la pendiente
         df['slope_std'] = df['cycle_slope'].rolling(50).std()
         # Define el umbral dinámico como el negativo de esa desviación
-        df['slope_threshold'] = -df['slope_std']
+        df['slope_threshold'] = -df['slope_std']*0.7
         exit_prediction_2 = (df['cycle_slope'] < df['slope_threshold'])
 
         # Muestra el último
@@ -320,7 +319,7 @@ class FourierCycleInflection(IStrategy):
 
         # slope_down → solo si hay beneficio
         if self.slope_down_condition(pair, current_time):
-            if profit > self.fee*10:
+            if profit > self.fee:
                 return "slope_down"
 
         # anticipación → opcional, también solo si hay beneficio
