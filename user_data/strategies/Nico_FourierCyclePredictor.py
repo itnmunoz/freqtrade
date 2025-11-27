@@ -145,15 +145,19 @@ class FourierCycleInflection(IStrategy):
         # Media del ciclo para referencia
         df['cycle_mean'] = np.mean(df['cycle'])  # df['cycle'].rolling(window=50).mean()
 
-        # Offset para graficar pendiente en la misma escala
-        df['cycle_slope_offset'] = df['cycle_slope'] * 10 + df['cycle_mean']
+        # Offset para gráficas en la misma escala
+        offset = df['cycle'].iloc[-1]
+        df['offset'] = offset
+
+        # Escala + Offset
+        df['cycle_slope_offset'] = df['cycle_slope'] * 10 + df['offset']
 
         # Proyecciones de inflexión (adaptadas a slope continuo)
         df = self.anticipate_inflection(
             df, slope_col='cycle_slope', lookback=3, horizon=(3, 4)
         )
-        df['y0_proj_offset'] = df['y0_proj'] * 10 + df['cycle_mean']
-        df['y1_proj_offset'] = df['y1_proj'] * 10 + df['cycle_mean']
+        df['y0_proj_offset'] = df['y0_proj'] * 10 + df['offset']
+        df['y1_proj_offset'] = df['y1_proj'] * 10 + df['offset']
 
         # Detección de oscilaciones con ventana corta
         df = self.detect_cycle_frequency(
